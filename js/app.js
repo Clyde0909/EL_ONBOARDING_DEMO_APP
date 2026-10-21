@@ -406,7 +406,7 @@
     const resRows = S.reservations.filter((r) => r.status !== 'completed').map((r) => `
       <div class="demo-res"><div class="nm"><span>${r.hotel}</span><span class="chip ${r.ble ? 'chip-gold' : 'chip-gray'}">${r.ble ? 'NFC·BLE' : 'NFC 전용'}</span></div>
       <div class="seg">${['waiting', 'available', 'checkedIn'].map((s) => `<button class="${r.status === s ? 'on' : ''}" data-act="setStatus" data-id="${r.id}" data-v="${s}">${STATUS[s].label}</button>`).join('')}</div>
-      ${preState(r) === 'soon' ? `<button class="demo-pre" data-act="preOpen" data-id="${r.id}">${I.bag}사전 주문 오픈 시뮬레이션 (체크인 ${PRE_H}시간 전)</button>` : ''}</div>`).join('');
+      ${r.status === 'waiting' ? `<button class="demo-pre" data-act="preOpen" data-id="${r.id}">${I.bag}사전 주문 오픈 시뮬레이션 (체크인 ${PRE_H}시간 전)</button>` : ''}</div>`).join('');
     sheet('데모 컨트롤', `
       <div class="demo-group"><label>사용자 시점</label><div class="seg">
         <button class="${isPrimary() ? 'on' : ''}" data-act="persona" data-v="primary">주 예약자 · ${S.users.primary.name}</button>
@@ -501,7 +501,9 @@
       <nav class="quick" aria-label="바로가기">
         <a href="#/reservations"><span class="qi">${I.list}</span>예약 조회</a>
         <button data-act="quickCheckin"><span class="qi">${I.door}</span>모바일 체크인</button>
-        <button data-act="openKey"><span class="qi">${I.key}</span>모바일 키</button>
+        ${next && next.status === 'checkedIn'
+          ? `<button data-act="openKey"><span class="qi">${I.key}</span>모바일 키</button>`
+          : `<button data-act="openShop"><span class="qi">${I.bag}</span>사전 주문</button>`}
         <button data-act="quickGuest"><span class="qi">${I.userPlus}</span>동숙자 추가</button>
       </nav>
       ${next ? recoSection(next) : ''}
@@ -1034,9 +1036,9 @@
         `${me().name}님 예약 맞춤 추천: ${names} · 객실에 미리 준비해 드려요.`, `#/shop/${r.id}`), 700);
     },
     openShop: () => {
-      const r = visibleRes().find((x) => preState(x) === 'open');
+      const r = visibleRes().find((x) => preState(x) === 'open') || visibleRes().find((x) => preState(x) === 'soon');
       closeOverlay();
-      if (!r) { toast('지금 사전 주문할 수 있는 예약이 없습니다.'); return; }
+      if (!r) { toast('사전 주문할 수 있는 예약이 없습니다.'); return; }
       go(`#/shop/${r.id}`);
     }
   };
