@@ -33,6 +33,7 @@
     clock: P('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>'),
     gift: P('<rect x="3.5" y="9" width="17" height="11.5" rx="1"/><path d="M2.5 9h19M12 9v11.5M12 9S10.5 4 8 4.5 7 9 12 9zm0 0s1.5-5 4-4.5S17 9 12 9z"/>'),
     crown: P('<path d="M4 18l-1-10 5 4 4-7 4 7 5-4-1 10z"/><path d="M4 21h16"/>'),
+    bag: P('<path d="M5 8h14l-1 12.5H6z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'),
     spark: P('<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/>'),
     swap: P('<path d="M4 8h14l-4-4M20 16H6l4 4"/>'),
     coffee: P('<path d="M4 10h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11.5h1.5a2.5 2.5 0 0 1 0 5H16M8 4.5c0 1.5 1 1.5 1 3M12 4.5c0 1.5 1 1.5 1 3M3 22h14"/>'),
@@ -135,14 +136,14 @@
   const $ = (sel, root = document) => root.querySelector(sel);
 
   /* ---------------- state ---------------- */
-  const STORE = 'kh-demo-state-v2';
+  const STORE = 'kh-demo-state-v3';
   function initialState() {
     const t = new Date(); t.setHours(0, 0, 0, 0);
     return {
       persona: 'primary',
       users: {
-        primary: { name: '홍길동', phone: '010-1234-5678', grade: 'K MEMBERSHIP GOLD', no: 'N 0120191234567' },
-        companion: { name: '김민지', phone: '010-9876-5432', grade: 'K MEMBERSHIP SILVER', no: 'N 0120207654321' }
+        primary: { name: '홍길동', phone: '010-1234-5678', grade: 'K MEMBERSHIP GOLD', no: 'N 0120191234567', point: 12400 },
+        companion: { name: '김민지', phone: '010-9876-5432', grade: 'K MEMBERSHIP SILVER', no: 'N 0120207654321', point: 3200 }
       },
       reservations: [
         {
@@ -153,11 +154,18 @@
           pay: { brand: 'SHINHAN CARD', label: '신한카드', last4: '4821', amount: 428000 }
         },
         {
-          id: 'KH2611-204551', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '패밀리 스위트', view: '칼봉산 마운틴뷰', theme: 'mountain',
-          checkIn: iso(addDays(t, 24)), checkOut: iso(addDays(t, 26)), inTime: '15:00', outTime: '11:00', adults: 2, children: 2,
+          id: 'KH2611-204551', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '패밀리 스위트 (취사형)', view: '칼봉산 마운틴뷰', theme: 'mountain', kitchen: true,
+          checkIn: iso(addDays(t, 2)), checkOut: iso(addDays(t, 4)), inTime: '15:00', outTime: '11:00', adults: 2, children: 2,
           status: 'waiting', ble: false, lock: 'K-Lock Classic · NFC 전용', roomNo: 'B-305', floor: 'B동 3F', bleOn: false,
           guests: [],
           pay: { brand: 'HYUNDAI CARD', label: '현대카드', last4: '1093', amount: 612000 }
+        },
+        {
+          id: 'KH2610-305517', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '스탠다드 더블', view: '북한강 리버뷰', theme: 'gold',
+          checkIn: iso(addDays(t, 9)), checkOut: iso(addDays(t, 10)), inTime: '15:00', outTime: '11:00', adults: 2, children: 0,
+          status: 'waiting', ble: true, lock: 'K-Lock Pro · NFC / BLE', roomNo: '903', floor: '9F', bleOn: false,
+          guests: [],
+          pay: { brand: 'KB KOOKMIN CARD', label: 'KB국민카드', last4: '7710', amount: 214000 }
         },
         {
           id: 'KH2607-073102', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '리버 디럭스', view: '북한강 리버뷰', theme: 'autumn',
@@ -245,10 +253,95 @@
       </div></section>`;
   }
 
+  /* ---------------- E·LAND 사전 주문 (체크인 72시간 전 오픈 → 체크인 시 마감, 객실 비치) ----------------
+   * 예약 구성(어린이 동반 가족/커플/일행)과 객실 타입(취사형)으로 이랜드 브랜드 상품을 룰 기반 추천한다.
+   * 엑스트라 인컴(투숙객 전용가 판매) + 브랜드 로열티(E.POINT 적립, 크로스 브랜드 쿠폰) 시연용. */
+  const PRE_H = 72;
+  const POINT_RATE = 0.05;
+  const ELAND = {
+    spaokids: { name: 'SPAO KIDS', ko: '스파오키즈', c: '#f2b632', fg: '#1f1f1f', soft: '#fff4d6' },
+    spao: { name: 'SPAO', ko: '스파오', c: '#1f1f1f', fg: '#fff', soft: '#eceff4' },
+    ashley: { name: 'ASHLEY', ko: '애슐리퀸즈', c: '#8c2333', fg: '#fff', soft: '#f8e6e8' },
+    pizzamall: { name: 'PIZZA MALL', ko: '피자몰', c: '#d4492c', fg: '#fff', soft: '#fdeadf' },
+    butter: { name: 'BUTTER', ko: '버터', c: '#f3d35f', fg: '#1f1f1f', soft: '#fff6cf' },
+    cafe: { name: 'THE CAFE', ko: '더카페', c: '#5a4030', fg: '#fff', soft: '#efe4da' }
+  };
+  const GOODS = [
+    { sku: 'spk-swim', brand: 'spaokids', name: '아동 래시가드 수영복 세트', opt: '상·하의 + 수모 · 110~150', price: 39900, sale: 29900, art: 'swim', tags: ['kids'] },
+    { sku: 'spk-tube', brand: 'spaokids', name: '키즈 튜브 & 물놀이 세트', opt: '튜브 · 아쿠아슈즈 · 방수팩', price: 24900, sale: 18900, art: 'tube', tags: ['kids'] },
+    { sku: 'ash-cake', brand: 'ashley', name: '시그니처 뉴욕 치즈케이크', opt: '1호 홀케이크 · 레터링 무료', price: 32000, sale: 25600, art: 'cake', tags: ['couple'] },
+    { sku: 'ash-kit', brand: 'ashley', name: '스테이크 & 투움바 파스타 밀키트', opt: '2~3인분 · 객실 냉장고 비치', price: 34900, sale: 27900, art: 'kit', tags: ['kitchen'] },
+    { sku: 'ash-bbq', brand: 'ashley', name: '바비큐 폭립 패밀리 밀키트', opt: '4인분 · 소스 · 가니시 포함', price: 45900, sale: 36700, art: 'bbq', tags: ['kitchen', 'family'] },
+    { sku: 'spao-pj', brand: 'spao', name: '커플 · 패밀리 파자마', opt: '2벌 세트 · S~XL', price: 59800, sale: 47800, art: 'pajama', tags: ['couple', 'family'] },
+    { sku: 'pm-party', brand: 'pizzamall', name: '객실 파티 세트', opt: '라지 피자 + 치킨 + 콜라 1.25L', price: 39900, sale: 31900, art: 'pizza', tags: ['group'] },
+    { sku: 'bt-deco', brand: 'butter', name: '기념일 데코 키트', opt: '풍선 · 가랜드 · LED 캔들', price: 25000, sale: 19900, art: 'deco', tags: ['couple', 'group'] },
+    { sku: 'cafe-drip', brand: 'cafe', name: '드립백 & 쿠키 모닝 세트', opt: '드립백 4입 + 쿠키 2입', price: 15000, sale: 12000, art: 'coffee', tags: [] }
+  ];
+  const ART = {
+    swim: '<path d="M24 22l10-4h12l10 4 8 11-7 5-5-5v25H28V33l-5 5-7-5z" fill="#3aa0d8"/><path d="M28 44h24" stroke="#fff" stroke-width="3"/><path d="M28 50h24" stroke="#ffd34d" stroke-width="3"/>',
+    tube: '<circle cx="40" cy="42" r="21" fill="#ff7a59"/><circle cx="40" cy="42" r="9" fill="#fff4d6"/><path d="M40 21v12M40 51v12M19 42h12M49 42h12" stroke="#fff" stroke-width="6"/>',
+    cake: '<rect x="17" y="36" width="46" height="22" rx="3" fill="#f5d48a"/><ellipse cx="40" cy="36" rx="23" ry="7" fill="#fbe6b4"/><rect x="17" y="54" width="46" height="6" rx="3" fill="#b9773f"/><circle cx="40" cy="33" r="3.5" fill="#c0392b"/>',
+    kit: '<rect x="15" y="26" width="50" height="34" rx="4" fill="#fff"/><rect x="15" y="26" width="50" height="10" rx="4" fill="#8c2333"/><ellipse cx="33" cy="48" rx="9" ry="6" fill="#9a4b2c"/><path d="M45 52c3-6 10-6 13-1" stroke="#e7b54b" stroke-width="3" fill="none"/><path d="M47 46c3-4 8-4 10 0" stroke="#e7b54b" stroke-width="3" fill="none"/>',
+    bbq: '<rect x="15" y="32" width="50" height="24" rx="11" fill="#a2452a"/><path d="M26 33v22M36 33v22M46 33v22M56 33v22" stroke="#7a2f1b" stroke-width="2.5"/><path d="M20 30c6-4 34-4 40 0" stroke="#e08a3a" stroke-width="3" fill="none"/>',
+    pajama: '<path d="M24 22l10-4h12l10 4 8 12-7 4-5-6v28H28V32l-5 6-7-4z" fill="#c9d6ea"/><path d="M28 38h24M28 46h24M28 54h24" stroke="#8aa1c6" stroke-width="2.5"/>',
+    pizza: '<path d="M40 16L64 60H16z" fill="#f3b544"/><path d="M16 60h48l-2 4H18z" fill="#c97a2b"/><circle cx="40" cy="36" r="4" fill="#c0392b"/><circle cx="32" cy="50" r="4" fill="#c0392b"/><circle cx="48" cy="50" r="4" fill="#c0392b"/>',
+    deco: '<ellipse cx="31" cy="31" rx="11" ry="13" fill="#f28da5"/><ellipse cx="49" cy="29" rx="11" ry="13" fill="#f6c14b"/><path d="M31 44l5 20M49 42l-5 22" stroke="#8a8a8a" stroke-width="1.4"/>',
+    coffee: '<path d="M22 32h32l-3 26H25z" fill="#c7a27c"/><path d="M54 37h4a5 5 0 0 1 0 10h-5" stroke="#c7a27c" stroke-width="3.5" fill="none"/><path d="M31 26c0-4 4-4 4-8M41 26c0-4 4-4 4-8" stroke="#8c7259" stroke-width="2" fill="none"/>'
+  };
+  // 주문 감사 쿠폰은 주문한 브랜드가 아닌 다른 이랜드 브랜드로 발급해 매장 방문(크로스 셀)을 유도한다.
+  const CROSS = {
+    spaokids: { title: '애슐리퀸즈 매장 식사 15% 할인', pct: '15%' },
+    spao: { title: '애슐리퀸즈 매장 식사 15% 할인', pct: '15%' },
+    butter: { title: '애슐리퀸즈 매장 식사 15% 할인', pct: '15%' },
+    ashley: { title: '스파오 · 스파오키즈 10% 할인', pct: '10%' },
+    pizzamall: { title: '스파오 · 스파오키즈 10% 할인', pct: '10%' },
+    cafe: { title: '스파오키즈 10% 할인', pct: '10%' }
+  };
+  const goodArt = (g) => `<svg viewBox="0 0 80 80" aria-hidden="true"><rect width="80" height="80" fill="${ELAND[g.brand].soft}"/>${ART[g.art]}</svg>`;
+  const brandTag = (b) => `<span class="brand-tag" style="background:${ELAND[b].c};color:${ELAND[b].fg}">${ELAND[b].name}</span>`;
+  const offPct = (g) => Math.round((1 - g.sale / g.price) * 100);
+  const goodBy = (sku) => GOODS.find((g) => g.sku === sku);
+  const checkInAt = (r) => { const d = parse(r.checkIn); const [h, m] = r.inTime.split(':').map(Number); d.setHours(h, m); return d; };
+  const preStart = (r) => new Date(checkInAt(r).getTime() - PRE_H * 3600000);
+  const preState = (r) => (r.status === 'checkedIn' || r.status === 'completed') ? 'closed' : (r.preOpen || Date.now() >= preStart(r).getTime()) ? 'open' : 'soon';
+  const fmtDT = (d) => `${pad(d.getMonth() + 1)}.${pad(d.getDate())} (${DAY[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  function guestProfile(r) {
+    const t = [];
+    if (r.children > 0) t.push(['kids', '어린이 동반 가족'], ['family', '가족 단위']);
+    else if (r.adults >= 3) t.push(['group', `성인 ${r.adults}인 일행`]);
+    else t.push(['couple', '커플']);
+    if (r.kitchen) t.push(['kitchen', '취사 가능 객실']);
+    return t;
+  }
+  function picks(r) {
+    const prof = guestProfile(r);
+    return GOODS.map((g) => ({ g, hit: prof.filter(([k]) => g.tags.includes(k)) }))
+      .filter((x) => x.hit.length).sort((a, b) => b.hit.length - a.hit.length);
+  }
+  const cartCount = () => Object.values(ui.cart.items).reduce((a, b) => a + b, 0);
+  const cartSum = () => GOODS.reduce((s, g) => s + (ui.cart.items[g.sku] || 0) * g.sale, 0);
+  const orderTitle = (o) => `${goodBy(o.items[0].sku).name}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}`;
+  function preBanner(r) {
+    const st = preState(r); const n = (r.orders || []).length;
+    if (r.status === 'completed') return '';
+    if (st === 'soon') return `<div class="pre-banner soon">${I.bag}<span><b>E·LAND 사전 주문</b><small>${fmtDT(preStart(r))} 오픈 · 체크인 ${PRE_H}시간 전부터</small></span></div>`;
+    if (st === 'closed') return n ? `<a class="pre-banner" href="#/shop/${r.id}">${I.bag}<span><b>사전 주문 ${n}건</b><small>객실 ${r.roomNo}호에 준비 완료</small></span>${I.right}</a>` : '';
+    return `<a class="pre-banner open" href="#/shop/${r.id}">${I.bag}<span><b>${n ? `사전 주문 ${n}건 · 추가 주문하기` : 'E·LAND 사전 주문 오픈'}</b><small>체크인 전에 주문하면 객실에 미리 준비해 드려요</small></span>${I.right}</a>`;
+  }
+  function preSection(r) {
+    const orders = r.orders || [];
+    const banner = preBanner(r);
+    if (!banner && !orders.length) return '';
+    return `<section class="sec pre-sec"><div class="sec-hd"><h2>사전 주문</h2>${brandTag('spao').replace('SPAO', 'E·LAND')}</div>
+      ${banner}
+      ${orders.map((o) => `<div class="order-row"><div><b>${orderTitle(o)}</b><span>${o.no} · ${o.delivery} · ${esc(o.by)}</span></div><strong>${won(o.total)}</strong></div>`).join('')}
+    </section>`;
+  }
+
   /* ---------------- ui primitives ---------------- */
   const app = $('#app');
   const overlay = $('#overlay-root');
-  const ui = { tab: 'upcoming', ci: null, key: null, fab: '' };
+  const ui = { tab: 'upcoming', ci: null, key: null, fab: '', cart: null };
   let timers = [];
   let after = null;
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
@@ -300,6 +393,7 @@
         <a href="#/" data-act="closeOverlay">${I.home}홈</a>
         <a href="#/reservations" data-act="closeOverlay">${I.list}나의 예약</a>
         <button data-act="openKey">${I.key}모바일 키${keyRes.length ? `<span class="chip chip-gold badge">${keyRes.length}</span>` : ''}</button>
+        <button data-act="openShop">${I.bag}이랜드 사전 주문</button>
         <button data-act="soon">${I.gift}프로모션</button>
         <button data-act="soon">${I.crown}멤버십</button>
         <hr/>
@@ -311,7 +405,8 @@
   function demoPanel() {
     const resRows = S.reservations.filter((r) => r.status !== 'completed').map((r) => `
       <div class="demo-res"><div class="nm"><span>${r.hotel}</span><span class="chip ${r.ble ? 'chip-gold' : 'chip-gray'}">${r.ble ? 'NFC·BLE' : 'NFC 전용'}</span></div>
-      <div class="seg">${['waiting', 'available', 'checkedIn'].map((s) => `<button class="${r.status === s ? 'on' : ''}" data-act="setStatus" data-id="${r.id}" data-v="${s}">${STATUS[s].label}</button>`).join('')}</div></div>`).join('');
+      <div class="seg">${['waiting', 'available', 'checkedIn'].map((s) => `<button class="${r.status === s ? 'on' : ''}" data-act="setStatus" data-id="${r.id}" data-v="${s}">${STATUS[s].label}</button>`).join('')}</div>
+      ${preState(r) === 'soon' ? `<button class="demo-pre" data-act="preOpen" data-id="${r.id}">${I.bag}사전 주문 오픈 시뮬레이션 (체크인 ${PRE_H}시간 전)</button>` : ''}</div>`).join('');
     sheet('데모 컨트롤', `
       <div class="demo-group"><label>사용자 시점</label><div class="seg">
         <button class="${isPrimary() ? 'on' : ''}" data-act="persona" data-v="primary">주 예약자 · ${S.users.primary.name}</button>
@@ -365,6 +460,7 @@
       <div class="res-body"><h3>${r.hotel}</h3><div class="room">${r.room} · ${r.view}</div>
         <div class="meta"><div>${I.cal}${stayLine(r)}</div><div>${I.users}${paxLine(r)}</div><div>${r.ble ? I.ble : I.nfc}${r.lock}</div></div></div>
       ${strip(r)}
+      ${preBanner(r)}
       ${done
         ? `<div class="res-actions one"><a class="btn btn-line btn-sm" href="#/reservation/${r.id}">예약 상세</a></div>`
         : `<div class="res-actions">${second}${mainAction(r, 'btn-sm')}</div>`}
@@ -474,6 +570,7 @@
           : `<p class="hint">${I.info}예약 인원만큼 동숙자가 모두 등록되었습니다.</p>`) : ''}
         <p class="hint">${I.info}동숙자는 체크인 완료 후 모바일 키로 객실 문을 열 수 있습니다. 모바일 체크인은 결제정보를 등록한 주 예약자만 가능합니다.</p>
       </section>
+      ${done ? '' : preSection(r)}
       ${done ? '' : recoSection(r)}
       ${done ? '' : `<div class="sticky-cta">${r.status === 'waiting' ? `<div class="note">${fmtS(r.checkIn)} ${r.inTime}부터 체크인 가능 시 알림을 보내드려요</div>` : ''}${mainAction(r, 'btn-block')}</div>`}
     </div>`;
@@ -509,9 +606,9 @@
       toast(`${name} 님이 동숙 초대를 수락했습니다.`);
     }, 3000);
   }
-  function blocked(icon, title, body, cta) {
+  function blocked(icon, title, body, cta, hd = '모바일 체크인') {
     ui.fab = '';
-    return `<div class="page">${header({ back: true, title: '모바일 체크인', right: '<span style="width:40px;display:block"></span>' })}
+    return `<div class="page">${header({ back: true, title: hd, right: '<span style="width:40px;display:block"></span>' })}
       <div class="blocked"><div class="bi">${icon}</div><h2>${title}</h2><p>${body}</p>${cta}</div></div>`;
   }
 
@@ -670,6 +767,121 @@
     later(step, 260);
   }
 
+  /* ---------------- E·LAND 사전 주문 화면 ---------------- */
+  function stepper(g) {
+    const q = ui.cart.items[g.sku] || 0;
+    return q
+      ? `<div class="stepper"><button data-act="qty" data-sku="${g.sku}" data-d="-1" aria-label="${g.name} 빼기">−</button><b>${q}</b><button data-act="qty" data-sku="${g.sku}" data-d="1" aria-label="${g.name} 더하기">+</button></div>`
+      : `<button class="add-btn" data-act="qty" data-sku="${g.sku}" data-d="1">${I.plus}담기</button>`;
+  }
+
+  function viewShop(id) {
+    const r = getRes(id);
+    if (!r || !visibleRes().includes(r) || r.status === 'completed') return notFound();
+    const T = 'E·LAND 사전 주문';
+    const back = `<a class="btn btn-line btn-block" href="#/reservation/${r.id}">예약 상세로 돌아가기</a>`;
+    const st = preState(r);
+    if (st === 'soon') return blocked(I.clock, '아직 사전 주문 오픈 전이에요',
+      `${fmtDT(preStart(r))}부터 주문할 수 있어요.<br/>체크인 ${PRE_H}시간 전 오픈되면 푸시 알림으로 알려드릴게요.`, back, T);
+    if (st === 'closed') return blocked(I.bag, '사전 주문이 마감되었습니다',
+      (r.orders || []).length ? `주문하신 상품 ${r.orders.length}건은 ${r.roomNo}호에 준비되어 있어요.<br/>사전 주문은 체크인 전까지 가능합니다.` : '사전 주문은 체크인 전까지 가능합니다.', back, T);
+    if (!ui.cart || ui.cart.id !== r.id) ui.cart = { id: r.id, items: {} };
+    ui.fab = 'up2';
+    const prof = guestProfile(r);
+    const hrs = Math.floor((checkInAt(r).getTime() - Date.now()) / 3600000);
+    const cnt = cartCount(); const sum = cartSum();
+    return `<div class="page shop">
+      ${header({ back: true, title: T, right: '<span style="width:40px;display:block"></span>' })}
+      <section class="shop-hero">
+        <div class="sh-top"><span class="chip chip-ai">${I.bag}체크인 전 사전 주문</span><span class="sh-time">${I.clock}${hrs >= 48 ? `체크인 D-${Math.ceil(hrs / 24)}` : hrs > 0 ? `체크인까지 ${hrs}시간` : '체크인 전까지 주문 가능'}</span></div>
+        <h2>${esc(me().name)}님의 가평 여행,<br/>이랜드가 미리 준비해 둘게요</h2>
+        <p>${r.hotel} · ${fmtS(r.checkIn)} · ${r.room}</p>
+        <div class="sh-perks"><div><b>최대 ${Math.max(...GOODS.map(offPct))}%</b><span>투숙객 전용가</span></div><div><b>${POINT_RATE * 100}%</b><span>E.POINT 적립</span></div><div><b>객실 비치</b><span>체크인 시 준비</span></div></div>
+      </section>
+      <section class="sec"><div class="sec-hd"><h2>${esc(me().name)}님 예약 맞춤 추천</h2></div>
+        <p class="shop-why">${I.spark}<span>${prof.map(([, l]) => l).join(' · ')} 예약을 분석해 골랐어요</span></p>
+        <div class="hscroll pick-row">${picks(r).map(({ g, hit }) => `<div class="pick"><div class="pk-art">${goodArt(g)}<em>-${offPct(g)}%</em></div>
+          ${brandTag(g.brand)}<b>${g.name}</b><small class="why">${hit.map(([, l]) => l).join(' · ')} 추천</small>
+          <div class="price"><strong>${won(g.sale)}</strong><del>${won(g.price)}</del></div>${stepper(g)}</div>`).join('')}</div>
+      </section>
+      <div class="section-gap"></div>
+      <section class="sec"><div class="sec-hd"><h2>전체 상품 <span class="muted" style="font-size:15px">${GOODS.length}</span></h2></div>
+        <div class="goods">${GOODS.map((g) => `<div class="good"><div class="g-art">${goodArt(g)}</div>
+          <div class="g-info">${brandTag(g.brand)}<b>${g.name}</b><small>${g.opt}</small>
+          <div class="price"><em>${offPct(g)}%</em><strong>${won(g.sale)}</strong><del>${won(g.price)}</del></div></div>${stepper(g)}</div>`).join('')}</div>
+        <p class="hint">${I.info}주문 상품은 체크인 시 객실에 비치되며(냉장 상품은 객실 냉장고), 체크인 전까지 무료로 취소할 수 있습니다.</p>
+      </section>
+      <div class="sticky-cta">${cnt ? `<div class="note">E.POINT <b style="color:var(--gold-d)">${Math.floor(sum * POINT_RATE).toLocaleString()}P</b> 적립 예정 · 체크인 전까지 무료 취소</div>` : ''}
+        <button class="btn btn-gold btn-block" data-act="preCheckout" ${cnt ? '' : 'disabled'}>${cnt ? `${cnt}개 · ${won(sum)} 주문하기` : '상품을 담아 주세요'}</button></div>
+    </div>`;
+  }
+
+  function coBody() {
+    const c = ui.cart; const r = getRes(c.id); const u = me();
+    const sum = cartSum(); const use = c.usePoint ? Math.min(u.point, sum) : 0; const pay = sum - use;
+    const opt = (k, v, label) => `<button class="${c[k] === v ? 'on' : ''}" data-act="coOpt" data-k="${k}" data-v="${v}">${label}</button>`;
+    return `<div class="co-lines">${GOODS.filter((g) => c.items[g.sku]).map((g) => `<div><span>${ELAND[g.brand].ko} · ${g.name} × ${c.items[g.sku]}</span><b>${won(g.sale * c.items[g.sku])}</b></div>`).join('')}</div>
+      <div class="demo-group"><label>받는 방법</label><div class="seg">${opt('delivery', 'room', '체크인 시 객실 비치')}${opt('delivery', 'front', '프런트 수령')}</div></div>
+      <div class="demo-group"><label>결제 수단</label><div class="seg">${isPrimary() ? opt('pay', 'card', `${r.pay.label} ****${r.pay.last4}`) : ''}${opt('pay', 'epay', 'E.PAY 간편결제')}</div></div>
+      <button class="check co-point ${c.usePoint ? 'on' : ''}" data-act="coPoint" role="checkbox" aria-checked="${!!c.usePoint}"><span class="cb">${I.check}</span>E.POINT 사용<span class="req">보유 ${u.point.toLocaleString()}P</span></button>
+      <dl class="kv co-sum"><div><dt>상품 금액</dt><dd>${won(sum)}</dd></div>${use ? `<div><dt>E.POINT 사용</dt><dd>-${won(use)}</dd></div>` : ''}
+        <div><dt>결제 금액</dt><dd><b>${won(pay)}</b></dd></div>
+        <div><dt>E.POINT 적립 예정 (${POINT_RATE * 100}%)</dt><dd class="gold">+${Math.floor(pay * POINT_RATE).toLocaleString()}P</dd></div></dl>
+      <div class="act"><button class="btn btn-gold btn-block" data-act="placeOrder">${won(pay)} 결제하기</button></div>`;
+  }
+
+  function checkoutSheet() {
+    const c = ui.cart; const r = getRes(c.id);
+    c.delivery = c.delivery || 'room';
+    c.pay = c.pay || (isPrimary() ? 'card' : 'epay');
+    sheet('주문 확인', `<div id="coBody">${coBody()}</div>`, `<b style="color:var(--ink)">${r.hotel}</b> · ${fmtS(r.checkIn)} 체크인 · 체크인 전까지 무료 취소`);
+  }
+
+  function placeOrder() {
+    const c = ui.cart; const r = getRes(c.id); const u = me();
+    const items = GOODS.filter((g) => c.items[g.sku]).map((g) => ({ sku: g.sku, qty: c.items[g.sku] }));
+    const sum = cartSum(); const use = c.usePoint ? Math.min(u.point, sum) : 0; const pay = sum - use;
+    const o = {
+      no: 'EL' + String(Date.now()).slice(-8), items, sum, use, total: pay, earn: Math.floor(pay * POINT_RATE),
+      delivery: c.delivery === 'room' ? '체크인 시 객실 비치' : '프런트 수령',
+      payBy: c.pay === 'card' ? `${r.pay.label} ****${r.pay.last4}` : 'E.PAY 간편결제',
+      by: u.name, coupon: CROSS[goodBy(items[0].sku).brand]
+    };
+    closeOverlay();
+    const ld = document.createElement('div');
+    ld.className = 'loading';
+    ld.innerHTML = '<div><div class="spinner"></div><p>이랜드 주문을 접수하고 있습니다</p></div>';
+    document.body.appendChild(ld);
+    setTimeout(() => {
+      ld.remove(); u.point -= use; (r.orders = r.orders || []).push(o); save(); ui.cart = null;
+      go(`#/shop/${r.id}/done`); vibrate(60);
+    }, 1400);
+  }
+
+  function viewShopDone(id) {
+    const r = getRes(id);
+    const o = r && (r.orders || []).slice(-1)[0];
+    if (!o || !visibleRes().includes(r)) return notFound();
+    ui.fab = '';
+    return `<div class="page">
+      <header class="hdr"><span></span><a class="icon-btn" href="#/reservation/${r.id}" aria-label="닫기" style="margin:0 -8px 0 0">${I.close}</a></header>
+      <div class="done shop-done">
+        <div class="done-mark">${I.bag}</div>
+        <h2>사전 주문이 완료되었습니다</h2>
+        <p>${o.delivery === '프런트 수령' ? '체크인 시 프런트에서 받아 가세요.' : '체크인하시면 객실에 미리 준비해 둘게요.'}<br/>${r.hotel} · ${fmtS(r.checkIn)} 체크인</p>
+        <div class="box receipt"><dl class="kv">
+          <div><dt>주문번호</dt><dd>${o.no}</dd></div>
+          ${o.items.map((it) => { const g = goodBy(it.sku); return `<div><dt>${ELAND[g.brand].ko} · ${g.name} × ${it.qty}</dt><dd>${won(g.sale * it.qty)}</dd></div>`; }).join('')}
+          ${o.use ? `<div><dt>E.POINT 사용</dt><dd>-${won(o.use)}</dd></div>` : ''}
+          <div><dt>결제 금액 · ${o.payBy}</dt><dd><b>${won(o.total)}</b></dd></div>
+        </dl></div>
+        <div class="earn">${I.crown}<span>E.POINT <b>+${o.earn.toLocaleString()}P</b> 적립 예정<br/><small>체크아웃 후 적립 · 이랜드 전 브랜드에서 사용</small></span></div>
+        <div class="coupon"><div class="cp-l"><small>E·LAND CROSS BRAND COUPON</small><b>${o.coupon.title}</b><span>주문 감사 쿠폰 · 발급일로부터 30일 · 전국 매장</span></div><div class="cp-r">${o.coupon.pct}</div></div>
+        <a class="btn btn-dark btn-block" href="#/reservation/${r.id}" style="margin-bottom:10px">예약 상세로</a>
+        <a class="btn btn-line btn-block" href="#/shop/${r.id}">상품 더 둘러보기</a>
+      </div></div>`;
+  }
+
   function notFound() {
     return blocked(I.list, '예약을 찾을 수 없습니다', '현재 사용자 시점에서 확인할 수 없는 예약입니다.', `<a class="btn btn-line btn-block" href="#/reservations">나의 예약으로</a>`);
   }
@@ -679,7 +891,9 @@
     [/^\/reservations$/, viewList],
     [/^\/reservation\/([\w-]+)$/, viewDetail],
     [/^\/checkin\/([\w-]+)$/, viewCheckin],
-    [/^\/key\/([\w-]+)$/, viewKey]
+    [/^\/key\/([\w-]+)$/, viewKey],
+    [/^\/shop\/([\w-]+)$/, viewShop],
+    [/^\/shop\/([\w-]+)\/done$/, viewShopDone]
   ];
   let navs = 0;
   function render(keepScroll = false) {
@@ -697,7 +911,7 @@
   const refresh = () => render(true);
 
   function parentOf(path) {
-    const m = path.match(/^\/(checkin|key)\/([\w-]+)$/);
+    const m = path.match(/^\/(checkin|key|shop)\/([\w-]+)(\/done)?$/);
     if (m) return `#/reservation/${m[2]}`;
     if (/^\/reservation\//.test(path)) return '#/reservations';
     return '#/';
@@ -798,7 +1012,33 @@
       setTimeout(updateKey, 260);
       toast(r.bleOn ? '근접 시 자동 문 열림을 켰습니다.' : '근접 시 자동 문 열림을 껐습니다.');
     },
-    approach: () => approach()
+    approach: () => approach(),
+    qty: (el) => {
+      const c = ui.cart; const k = el.dataset.sku;
+      const q = Math.max(0, Math.min(9, (c.items[k] || 0) + Number(el.dataset.d)));
+      if (q) c.items[k] = q; else delete c.items[k];
+      const row = $('.pick-row'); const x = row ? row.scrollLeft : 0;
+      refresh();
+      const row2 = $('.pick-row'); if (row2) row2.scrollLeft = x;
+    },
+    preCheckout: () => checkoutSheet(),
+    coOpt: (el) => { ui.cart[el.dataset.k] = el.dataset.v; $('#coBody').innerHTML = coBody(); },
+    coPoint: () => { ui.cart.usePoint = !ui.cart.usePoint; $('#coBody').innerHTML = coBody(); },
+    placeOrder: () => placeOrder(),
+    preOpen: (el) => {
+      const r = getRes(el.dataset.id);
+      r.preOpen = true; save(); closeOverlay(); refresh();
+      if (!visibleRes().includes(r)) { toast(`${r.hotel} 사전 주문을 오픈했습니다.`); return; }
+      const names = picks(r).slice(0, 2).map(({ g }) => `${ELAND[g.brand].ko} ${g.name}`).join(', ');
+      setTimeout(() => push(`체크인 ${PRE_H / 24}일 전, 이랜드 사전 주문이 열렸어요`,
+        `${me().name}님 예약 맞춤 추천: ${names} · 객실에 미리 준비해 드려요.`, `#/shop/${r.id}`), 700);
+    },
+    openShop: () => {
+      const r = visibleRes().find((x) => preState(x) === 'open');
+      closeOverlay();
+      if (!r) { toast('지금 사전 주문할 수 있는 예약이 없습니다.'); return; }
+      go(`#/shop/${r.id}`);
+    }
   };
 
   document.addEventListener('click', (e) => {

@@ -106,6 +106,81 @@ svg { display: block; }
 .section-gap { height: 10px; background: var(--bg-2); }
 .sec { padding: 26px 18px; }
 .reco { padding-top: 6px; }
+/* E·LAND pre-order */
+.pre-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; color: var(--ink-2); background: #fff; border-top: 1px solid #f0f0f0; }
+.pre-banner > svg { width: 20px; height: 20px; flex: none; color: var(--gold-d); }
+.pre-banner > svg:last-child { width: 16px; height: 16px; color: var(--mute-2); margin-left: auto; }
+.pre-banner span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pre-banner small { font-size: 12px; color: var(--mute); }
+.pre-banner.open { background: linear-gradient(90deg, #1f1f1f, #3d3229); color: #fff; border-top: 0; }
+.pre-banner.open > svg { color: #e2c49f; }
+.pre-banner.open > svg:last-child { color: #e2c49f; }
+.pre-banner.open small { color: #cdbca8; }
+.pre-banner.soon { color: var(--mute); }
+.pre-sec { padding-top: 6px; }
+.pre-sec .pre-banner { border-radius: 12px; border: 1px solid #eee; }
+.pre-sec .pre-banner.open { border: 0; }
+.order-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 2px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+.order-row div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.order-row span { font-size: 12px; color: var(--mute); }
+.shop-hero { margin: 0 18px; padding: 20px 18px 16px; border-radius: 16px; color: #fff; background: radial-gradient(120% 100% at 100% 0%, #5b4a3a 0%, #1f1f1f 62%); }
+.shop-hero .chip-ai { background: rgba(255, 255, 255, .12); }
+.sh-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sh-time { font-size: 12px; color: #d9c7b2; display: flex; align-items: center; gap: 4px; }
+.sh-time svg { width: 14px; height: 14px; }
+.shop-hero h2 { margin: 0 0 6px; font-size: 21px; line-height: 1.4; font-weight: 700; }
+.shop-hero p { margin: 0 0 16px; font-size: 13px; color: #bfb3a6; }
+.sh-perks { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(255, 255, 255, .14); padding-top: 14px; text-align: center; }
+.sh-perks div { display: flex; flex-direction: column; gap: 3px; }
+.sh-perks div + div { border-left: 1px solid rgba(255, 255, 255, .14); }
+.sh-perks b { font-size: 15px; color: #e8cfae; }
+.sh-perks span { font-size: 11.5px; color: #bfb3a6; }
+.shop-why { display: flex; gap: 6px; align-items: center; margin: -6px 0 14px; font-size: 13px; color: var(--gold-d); }
+.shop-why svg { width: 16px; height: 16px; flex: none; }
+.pick { flex: none; width: 168px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 4px; }
+.pk-art { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 1; margin-bottom: 6px; }
+.pk-art svg, .g-art svg { display: block; width: 100%; height: 100%; }
+.pk-art em { position: absolute; left: 8px; top: 8px; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; background: #d4492c; border-radius: 6px; padding: 2px 6px; }
+.pick b { font-size: 14px; line-height: 1.4; }
+.pick .why { font-size: 11.5px; color: var(--gold-d); }
+.brand-tag { align-self: flex-start; display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 3px 6px; border-radius: 4px; line-height: 1.2; }
+.price { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.price strong { font-size: 15px; }
+.price del { font-size: 12px; color: var(--mute-2); }
+.price em { font-style: normal; font-size: 14px; font-weight: 700; color: #d4492c; }
+.pick .stepper, .pick .add-btn { margin-top: 6px; width: 100%; }
+.add-btn { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--gold); color: var(--gold-d); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: none; background: #fff; }
+.add-btn svg { width: 14px; height: 14px; }
+.stepper { height: 34px; display: inline-flex; align-items: center; justify-content: space-between; border-radius: 8px; background: var(--gold); color: #fff; flex: none; min-width: 96px; }
+.stepper button { width: 34px; height: 34px; color: #fff; font-size: 18px; }
+.stepper b { font-size: 14px; }
+.good { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+.g-art { width: 76px; height: 76px; border-radius: 10px; overflow: hidden; flex: none; }
+.g-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.g-info b { font-size: 14.5px; }
+.g-info small { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shop { padding-bottom: 120px; }
+.co-lines { margin: 0 18px 14px; padding: 12px 14px; border-radius: 12px; background: var(--bg-2); font-size: 13px; }
+.co-lines div { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; }
+.co-lines span { color: var(--ink-2); }
+.check.co-point { margin: 0 18px; width: calc(100% - 36px); }
+.pick-row { scroll-padding-inline: 18px; }
+.co-sum { margin-top: 6px; }
+.co-sum .gold { color: var(--gold-d); font-weight: 700; }
+.shop-done { padding-top: 30px; }
+.receipt { margin: 0 0 12px; text-align: left; }
+.receipt .kv dt { flex: 1; color: var(--ink-2); }
+.earn { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--gold-bg); color: var(--gold-d); font-size: 13.5px; text-align: left; margin-bottom: 12px; line-height: 1.5; }
+.earn svg { width: 20px; height: 20px; flex: none; }
+.earn small { color: var(--mute); font-size: 11.5px; }
+.coupon { display: flex; text-align: left; border-radius: 12px; overflow: hidden; margin-bottom: 22px; background: #1f1f1f; color: #fff; }
+.cp-l { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; border-right: 2px dashed rgba(255, 255, 255, .25); }
+.cp-l small { font-size: 10px; letter-spacing: .08em; color: #e2c49f; }
+.cp-l b { font-size: 15px; }
+.cp-l span { font-size: 11.5px; color: #bfb3a6; }
+.cp-r { width: 78px; display: grid; place-items: center; font-size: 22px; font-weight: 800; color: #e8cfae; }
+.demo-pre { margin-top: 8px; width: 100%; height: 36px; border-radius: 8px; border: 1px dashed var(--gold); color: var(--gold-d); font-size: 12.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.demo-pre svg { width: 15px; height: 15px; }
 .reco-card { border-radius: 14px; padding: 18px 16px 14px; background: linear-gradient(160deg, #fbf8f4 0%, #f3ebe1 100%); border: 1px solid var(--gold-l); }
 .reco-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .reco-hd small { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
