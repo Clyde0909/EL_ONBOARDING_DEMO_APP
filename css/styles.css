@@ -105,6 +105,25 @@ svg { display: block; }
 
 .section-gap { height: 10px; background: var(--bg-2); }
 .sec { padding: 26px 18px; }
+.reco { padding-top: 6px; }
+.reco-card { border-radius: 14px; padding: 18px 16px 14px; background: linear-gradient(160deg, #fbf8f4 0%, #f3ebe1 100%); border: 1px solid var(--gold-l); }
+.reco-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.reco-hd small { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip-ai { background: var(--ink); color: #f3e3cf; flex: none; }
+.chip-ai svg { color: #e2c49f; }
+.reco-msg { margin: 0 0 12px; font-size: 15.5px; line-height: 1.55; color: var(--ink); }
+.reco-list { list-style: none; margin: 0; padding: 0; }
+.reco-list li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(176, 148, 121, .22); }
+.reco-list .rk { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none; }
+.reco-list li:not(:first-child) .rk { background: #fff; color: var(--gold-d); border: 1px solid var(--gold-l); }
+.reco-list .ri { flex: 1; min-width: 0; }
+.reco-list .ri b { display: block; font-size: 15px; }
+.reco-list .ri span { display: block; font-size: 12px; color: var(--mute); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reco-list .bar { height: 4px; border-radius: 2px; background: rgba(176, 148, 121, .2); margin-top: 8px; overflow: hidden; }
+.reco-list .bar i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #d8c3ab, var(--gold-d)); }
+.reco-list .pct { flex: none; min-width: 50px; text-align: right; font-size: 19px; font-weight: 700; color: var(--gold-d); font-variant-numeric: tabular-nums; }
+.reco-ft { display: flex; gap: 4px; align-items: flex-start; margin: 6px 0 0; font-size: 11.5px; color: var(--mute); line-height: 1.5; }
+.reco-ft svg { width: 14px; height: 14px; flex: none; margin-top: 1px; }
 .sec-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .sec-hd h2 { font-size: 21px; font-weight: 500; margin: 0; letter-spacing: -0.03em; }
 .sec-hd .more { color: var(--mute); font-size: 13px; display: flex; align-items: center; gap: 2px; }

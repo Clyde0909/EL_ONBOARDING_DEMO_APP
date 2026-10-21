@@ -33,6 +33,7 @@
     clock: P('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>'),
     gift: P('<rect x="3.5" y="9" width="17" height="11.5" rx="1"/><path d="M2.5 9h19M12 9v11.5M12 9S10.5 4 8 4.5 7 9 12 9zm0 0s1.5-5 4-4.5S17 9 12 9z"/>'),
     crown: P('<path d="M4 18l-1-10 5 4 4-7 4 7 5-4-1 10z"/><path d="M4 21h16"/>'),
+    spark: P('<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/>'),
     swap: P('<path d="M4 8h14l-4-4M20 16H6l4 4"/>'),
     coffee: P('<path d="M4 10h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11.5h1.5a2.5 2.5 0 0 1 0 5H16M8 4.5c0 1.5 1 1.5 1 3M12 4.5c0 1.5 1 1.5 1 3M3 22h14"/>'),
     tube: P('<rect x="7" y="3" width="10" height="18" rx="1.5"/><path d="M7 7h10M19.5 6v12"/>'),
@@ -134,7 +135,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
 
   /* ---------------- state ---------------- */
-  const STORE = 'kh-demo-state-v1';
+  const STORE = 'kh-demo-state-v2';
   function initialState() {
     const t = new Date(); t.setHours(0, 0, 0, 0);
     return {
@@ -145,21 +146,21 @@
       },
       reservations: [
         {
-          id: 'KH2610-118820', hotel: '켄싱턴호텔 여의도', area: '서울 영등포구', room: '디럭스 패밀리 트윈', view: '한강 시티뷰', theme: 'city',
+          id: 'KH2610-118820', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '디럭스 패밀리 트윈', view: '북한강 리버뷰', theme: 'sea',
           checkIn: iso(t), checkOut: iso(addDays(t, 2)), inTime: '15:00', outTime: '11:00', adults: 3, children: 0,
           status: 'waiting', ble: true, lock: 'K-Lock Pro · NFC / BLE', roomNo: '1207', floor: '12F', bleOn: false,
           guests: [{ id: 'g1', name: '김민지', phone: '010-9876-5432', state: 'accepted' }],
           pay: { brand: 'SHINHAN CARD', label: '신한카드', last4: '4821', amount: 428000 }
         },
         {
-          id: 'KH2611-204551', hotel: '켄싱턴리조트 설악밸리', area: '강원 속초시', room: '패밀리 스위트', view: '설악산 마운틴뷰', theme: 'mountain',
+          id: 'KH2611-204551', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '패밀리 스위트', view: '칼봉산 마운틴뷰', theme: 'mountain',
           checkIn: iso(addDays(t, 24)), checkOut: iso(addDays(t, 26)), inTime: '15:00', outTime: '11:00', adults: 2, children: 2,
           status: 'waiting', ble: false, lock: 'K-Lock Classic · NFC 전용', roomNo: 'B-305', floor: 'B동 3F', bleOn: false,
           guests: [],
           pay: { brand: 'HYUNDAI CARD', label: '현대카드', last4: '1093', amount: 612000 }
         },
         {
-          id: 'KH2607-073102', hotel: '켄싱턴리조트 제주한림', area: '제주 제주시', room: '오션 디럭스', view: '한림 바다 오션뷰', theme: 'sea',
+          id: 'KH2607-073102', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '리버 디럭스', view: '북한강 리버뷰', theme: 'autumn',
           checkIn: iso(addDays(t, -82)), checkOut: iso(addDays(t, -79)), inTime: '15:00', outTime: '11:00', adults: 2, children: 0,
           status: 'completed', ble: true, lock: 'K-Lock Pro · NFC / BLE', roomNo: '815', floor: '8F', bleOn: false,
           guests: [{ id: 'g0', name: '이서준', phone: '010-5555-1212', state: 'accepted' }],
@@ -188,6 +189,62 @@
     checkedIn: { label: '체크인 완료', chip: 'chip-dark' },
     completed: { label: '이용 완료', chip: 'chip-gray' }
   };
+  /* ---------------- AI 주변 관광지 추천 (목업: 실제 AI 대신 룰 + 랜덤값) ----------------
+   * 예약 인원 구성(어린이 동반/성인 일행/2인), 등록 동숙자 수, 투숙 시기로 태그 가중치를 매기고
+   * 앱 실행마다 바뀌는 시드 랜덤값을 더해 적합도(%)를 만든다. 같은 실행 중에는 값이 고정된다. */
+  const SPOTS = [
+    { name: '남이섬', desc: '메타세쿼이아길 · 선착장 배편', km: 6.2, base: 30, tags: ['couple', 'family', 'nature'] },
+    { name: '아침고요수목원', desc: '사계절 정원 · 오색별빛정원전', km: 21.5, base: 24, tags: ['couple', 'nature', 'photo'] },
+    { name: '쁘띠프랑스', desc: '프랑스 테마 마을 · 어린왕자', km: 12.8, base: 18, tags: ['family', 'kids', 'photo'] },
+    { name: '피노키오와 다빈치', desc: '이탈리아 마을 · 마리오네트 공연', km: 13.1, base: 14, tags: ['family', 'kids'] },
+    { name: '가평 레일바이크', desc: '북한강 철교 위 레일바이크', km: 4.7, base: 20, tags: ['group', 'family', 'couple', 'activity'] },
+    { name: '자라섬', desc: '캠핑 · 계절 꽃 축제', km: 3.9, base: 16, tags: ['group', 'nature', 'activity'] },
+    { name: '청평호 수상레저', desc: '웨이크보드 · 바나나보트', km: 15.4, base: 15, tags: ['group', 'activity'] },
+    { name: '에델바이스 스위스테마파크', desc: '스위스 테마 마을 · 치즈 체험', km: 24.0, base: 12, tags: ['family', 'kids', 'photo'] },
+    { name: '가평 잣향기푸른숲', desc: '잣나무 숲 치유 산책로', km: 17.6, base: 10, tags: ['couple', 'nature'] },
+    { name: '용추계곡', desc: '옥빛 계곡 트레킹', km: 9.3, base: 10, tags: ['group', 'nature', 'activity'] }
+  ];
+  const SALT = Math.floor(Math.random() * 1e9);
+  function seeded(str) {
+    let h = (2166136261 ^ SALT) >>> 0;
+    for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+    return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+  }
+  function recommend(r) {
+    const party = r.adults + r.children;
+    const companions = r.guests.filter((g) => g.state === 'accepted').length;
+    const month = parse(r.checkIn).getMonth() + 1;
+    const w = {};
+    const add = (tag, v) => { w[tag] = (w[tag] || 0) + v; };
+    let label;
+    if (r.children > 0) { add('family', 20); add('kids', 16); label = `어린이 동반 ${party}인 가족`; }
+    else if (r.adults >= 3) { add('group', 22); add('activity', 10); label = `성인 ${r.adults}인 일행`; }
+    else { add('couple', 22); add('photo', 8); label = '2인 커플'; }
+    if (companions >= 2) add('group', 6);
+    if ([3, 4, 5, 9, 10, 11].includes(month)) add('nature', 8);
+    else if ([6, 7, 8].includes(month)) add('activity', 8);
+    else add('photo', 6);
+    const rnd = seeded(`${r.id}|${party}|${companions}`);
+    const ranked = SPOTS.map((s) => ({ ...s, raw: s.base * 0.8 + s.tags.reduce((sum, t) => sum + (w[t] || 0), 0) + rnd() * 8 }))
+      .sort((a, b) => b.raw - a.raw).slice(0, 4);
+    // 1위는 90~99%, 이하 순위는 1위와의 점수 차를 2배로 벌려 적합도 차이가 잘 보이게 한다.
+    const top = 90 + rnd() * 9;
+    const items = ranked.map((s) => ({ ...s, score: Math.max(38, Math.round(top - (ranked[0].raw - s.raw) * 2)) }));
+    return { label, items };
+  }
+  function recoSection(r) {
+    const { label, items } = recommend(r);
+    return `<section class="sec reco" aria-label="AI 추천 주변 관광지">
+      <div class="reco-card">
+        <div class="reco-hd"><span class="chip chip-ai">${I.spark}AI 추천</span><small>${label} · ${fmtS(r.checkIn)} 예약 기준</small></div>
+        <p class="reco-msg"><b>${esc(me().name)}님</b>과 비슷한 예약을 하신 분들은<br/>이런 곳들도 예약하셨어요.</p>
+        <ol class="reco-list">${items.map((s, i) => `<li><span class="rk">${i + 1}</span>
+          <div class="ri"><b>${s.name}</b><span>${s.desc} · ${s.km}km</span><div class="bar"><i style="width:${s.score}%"></i></div></div>
+          <strong class="pct">${s.score}%</strong></li>`).join('')}</ol>
+        <p class="reco-ft">${I.info}AI가 예약 인원 · 동숙자 구성 · 투숙 시기가 비슷한 고객의 예약 데이터를 분석한 적합도입니다.</p>
+      </div></section>`;
+  }
+
   /* ---------------- ui primitives ---------------- */
   const app = $('#app');
   const overlay = $('#overlay-root');
@@ -351,11 +408,12 @@
         <button data-act="openKey"><span class="qi">${I.key}</span>모바일 키</button>
         <button data-act="quickGuest"><span class="qi">${I.userPlus}</span>동숙자 추가</button>
       </nav>
+      ${next ? recoSection(next) : ''}
       <div class="section-gap"></div>
       <section class="sec"><div class="sec-hd"><h2>테마기획전</h2><button class="more" data-act="soon" aria-label="테마기획전 더보기" style="color:var(--ink)">${I.plus}</button></div>
         <div class="hscroll">
           <div class="promo"><div class="art">${scene('autumn')}<span class="badge">추가할인<br/>10%</span></div><h3>Autumn Festa</h3><p>쾌청한 가을날씨를 온몸으로 느낄 수 있는 켄싱턴 가을 패키지</p><div class="period">${I.cal}${t.getFullYear()}. 10. 01 ~ ${t.getFullYear()}. 11. 30</div></div>
-          <div class="promo"><div class="art">${scene('mountain')}</div><h3>설악산 단풍 스테이</h3><p>설악밸리에서 즐기는 단풍 트레킹과 조식 패키지</p><div class="period">${I.cal}${t.getFullYear()}. 10. 15 ~ ${t.getFullYear()}. 11. 15</div></div>
+          <div class="promo"><div class="art">${scene('mountain')}</div><h3>가평 단풍 스테이</h3><p>켄싱턴리조트 가평에서 즐기는 북한강 단풍 트레킹과 조식 패키지</p><div class="period">${I.cal}${t.getFullYear()}. 10. 15 ~ ${t.getFullYear()}. 11. 15</div></div>
           <div class="promo"><div class="art">${scene('gold')}</div><h3>K 멤버십 위크</h3><p>멤버십 회원만을 위한 객실 업그레이드와 라운지 혜택</p><div class="period">${I.cal}상시 진행</div></div>
         </div></section>
       <footer class="footer">${WORDMARK}<br/>본 앱은 모바일 체크인 · 모바일 키(NFC/BLE) 기능 시연을 위한 목업 데모입니다.<br/>실제 예약·결제·도어락 연동은 이루어지지 않습니다.</footer>
@@ -378,6 +436,7 @@
       </div>
       <div class="persona-bar"><span><b>${u.name}</b> 님 · ${isPrimary() ? '주 예약자' : '동숙자'} 시점</span><button data-act="persona" data-v="${isPrimary() ? 'companion' : 'primary'}">${I.swap}시점 전환</button></div>
       <div class="res-list">${cur.length ? cur.map(resCard).join('') : `<div class="empty">${I.cal}${ui.tab === 'upcoming' ? (isPrimary() ? '이용 예정인 예약이 없습니다.' : '동숙자로 초대된 예약이 없습니다.<br/>주 예약자에게 동숙자 추가를 요청해 주세요.') : '이용 완료된 예약이 없습니다.'}</div>`}</div>
+      ${ui.tab === 'upcoming' && up[0] ? recoSection(up[0]) : ''}
     </div>`;
   }
   function viewDetail(id) {
@@ -415,6 +474,7 @@
           : `<p class="hint">${I.info}예약 인원만큼 동숙자가 모두 등록되었습니다.</p>`) : ''}
         <p class="hint">${I.info}동숙자는 체크인 완료 후 모바일 키로 객실 문을 열 수 있습니다. 모바일 체크인은 결제정보를 등록한 주 예약자만 가능합니다.</p>
       </section>
+      ${done ? '' : recoSection(r)}
       ${done ? '' : `<div class="sticky-cta">${r.status === 'waiting' ? `<div class="note">${fmtS(r.checkIn)} ${r.inTime}부터 체크인 가능 시 알림을 보내드려요</div>` : ''}${mainAction(r, 'btn-block')}</div>`}
     </div>`;
   }
