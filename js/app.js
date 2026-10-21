@@ -267,7 +267,22 @@
     ashley: { name: 'ASHLEY', ko: '애슐리퀸즈', c: '#8c2333', fg: '#fff', soft: '#f8e6e8' },
     pizzamall: { name: 'PIZZA MALL', ko: '피자몰', c: '#d4492c', fg: '#fff', soft: '#fdeadf' },
     butter: { name: 'BUTTER', ko: '버터', c: '#f3d35f', fg: '#1f1f1f', soft: '#fff6cf' },
-    cafe: { name: 'THE CAFE', ko: '더카페', c: '#5a4030', fg: '#fff', soft: '#efe4da' }
+    cafe: { name: 'THE CAFE', ko: '더카페', c: '#5a4030', fg: '#fff', soft: '#efe4da' },
+    kgarden: { name: 'GARDEN BBQ', ko: '켄싱턴 가든 BBQ', c: '#2f4a35', fg: '#fff', soft: '#e6efe6' },
+    kenny: { name: 'KENSINGTON', ko: '켄싱턴 굿즈', c: '#b09479', fg: '#fff', soft: '#f5efe8' },
+    fc: { name: 'SEOUL E-LAND FC', ko: '서울 이랜드 FC', c: '#13274f', fg: '#fff', soft: '#e3e8f2' }
+  };
+  // 카테고리: eland(이랜드 브랜드, 기본) · bbq(가든 BBQ 시설 예약 fac + 재료) · kgoods/fc(온라인 구매, 택배 배송 가능)
+  // 가격·구성은 공개된 판매 정보(여기어때·부킹닷컴 BBQ 세트/셀프존, 케니몰·이랜드 매거진 키링, 레울샵 유니폼)를 참고했다.
+  const CATS = [['all', '전체'], ['eland', '이랜드 브랜드'], ['bbq', '가든 BBQ'], ['kgoods', '켄싱턴 굿즈'], ['fc', 'FC 굿즈']];
+  const catOf = (g) => g.cat || 'eland';
+  const SHIP_CATS = ['kgoods', 'fc'];
+  const BBQ_TIMES = ['17:00', '18:30', '20:00'];
+  const REVIEWS = {
+    bbq: [['바베큐 4인 세트 아주 맛있게 먹었어요.', '야놀자 투숙 후기'], ['바베큐 고기가 맛있고 직원분들이 친절했어요.', '여기어때 투숙 후기'],
+      ['저녁에 바베큐를 해 먹었는데 시설이 잘 갖춰져 있어요.', '트립어드바이저 투숙 후기']],
+    kgoods: [['로비 트리의 도어맨 베어 키링이 빠르게 동나 두 차례 재입고됐어요.', '헤럴드경제 보도'],
+      ['1,000개 한정 메리베어 키링, 사전 판매가 전년보다 두 배 빨리 소진됐어요.', '서울경제 보도']]
   };
   const GOODS = [
     { sku: 'spk-swim', brand: 'spaokids', name: '아동 래시가드 수영복 세트', opt: '상·하의 + 수모 · 110~150', price: 39900, sale: 29900, art: 'swim', tags: ['kids'] },
@@ -278,7 +293,21 @@
     { sku: 'spao-pj', brand: 'spao', name: '커플 · 패밀리 파자마', opt: '2벌 세트 · S~XL', price: 59800, sale: 47800, art: 'pajama', tags: ['couple', 'family'] },
     { sku: 'pm-party', brand: 'pizzamall', name: '객실 파티 세트', opt: '라지 피자 + 치킨 + 콜라 1.25L', price: 39900, sale: 31900, art: 'pizza', tags: ['group'] },
     { sku: 'bt-deco', brand: 'butter', name: '기념일 데코 키트', opt: '풍선 · 가랜드 · LED 캔들', price: 25000, sale: 19900, art: 'deco', tags: ['couple', 'group'] },
-    { sku: 'cafe-drip', brand: 'cafe', name: '드립백 & 쿠키 모닝 세트', opt: '드립백 4입 + 쿠키 2입', price: 15000, sale: 12000, art: 'coffee', tags: [] }
+    { sku: 'cafe-drip', brand: 'cafe', name: '드립백 & 쿠키 모닝 세트', opt: '드립백 4입 + 쿠키 2입', price: 15000, sale: 12000, art: 'coffee', tags: [] },
+    { sku: 'bbq-set4', cat: 'bbq', fac: true, brand: 'kgarden', name: '가든 BBQ 4인 세트', opt: '삼겹·목살 각 400g · 폭립 500g · 소시지 4 · 새우 4미 · 쌈채소 · 그릴 세팅', price: 139900, sale: 125900, art: 'grill', tags: ['family'] },
+    { sku: 'bbq-set6', cat: 'bbq', fac: true, brand: 'kgarden', name: '가든 BBQ 6인 세트', opt: '삼겹·목살 각 400g · 폭립 1kg · 소시지 · 새우 6미 · 쌈채소 · 그릴 세팅', price: 179900, sale: 161900, art: 'grill', tags: ['group'] },
+    { sku: 'bbq-self', cat: 'bbq', fac: true, brand: 'kgarden', name: '셀프 BBQ존 대여', opt: '테이블 · 그릴 · 숯 · 집게 · 가위 · 일회용품 (재료 별도)', price: 59900, sale: 53900, art: 'char', tags: [] },
+    { sku: 'bbq-meat', cat: 'bbq', brand: 'kgarden', name: '삼겹 · 목살 모둠 800g', opt: '2~3인분 · 국내산 냉장 · 시즈닝 포함', price: 39900, sale: 35900, art: 'meat', tags: ['kitchen'] },
+    { sku: 'bbq-rib', cat: 'bbq', brand: 'kgarden', name: '바비큐 폭립 500g', opt: '초벌 완료 · 바비큐 소스 동봉', price: 24900, sale: 21900, art: 'bbq', tags: [] },
+    { sku: 'bbq-sea', cat: 'bbq', brand: 'kgarden', name: '새우 · 소시지 그릴 세트', opt: '새우 6미 + 소시지 4개', price: 19900, sale: 17900, art: 'shrimp', tags: [] },
+    { sku: 'bbq-side', cat: 'bbq', brand: 'kgarden', name: '쌈채소 · 햇반 사이드 세트', opt: '상추 · 깻잎 · 김치 · 쌈장 · 햇반 2', price: 9900, sale: 8900, art: 'veg', tags: [] },
+    { sku: 'kb-door', cat: 'kgoods', brand: 'kenny', name: '도어맨 케니베어 인형', opt: '14cm · 헤링본 도어맨 유니폼', price: 32000, sale: 28800, art: 'bear', tags: ['kids'] },
+    { sku: 'kb-key3', cat: 'kgoods', brand: 'kenny', name: '케니베어 키링 3종 세트', opt: '도어맨 · 셰프 · 룸메이드', price: 35900, sale: 32300, art: 'keyring', tags: ['couple'] },
+    { sku: 'kb-merry', cat: 'kgoods', brand: 'kenny', name: '메리베어 키링', opt: '윈터 시즌 한정판', badge: '한정 1,000개', price: 19900, sale: 17900, art: 'merry', tags: ['couple', 'kids'] },
+    { sku: 'fc-home', cat: 'fc', brand: 'fc', name: '2025 홈 유니폼 (노마킹)', opt: '어센틱 · S~3XL', price: 99000, sale: 89100, art: 'jersey', tags: ['group'] },
+    { sku: 'fc-full', cat: 'fc', brand: 'fc', name: '2025 홈 유니폼 (풀마킹)', opt: '선수 마킹 · 애슐리퀸즈 스폰서 패치', price: 146000, sale: 131400, art: 'jersey', tags: [] },
+    { sku: 'fc-key', cat: 'fc', brand: 'fc', name: '유니폼 아크릴 키링', opt: '2025 홈 · 원정 2종 중 택1', price: 13000, sale: 11700, art: 'acryl', tags: ['kids'] },
+    { sku: 'fc-muffler', cat: 'fc', brand: 'fc', name: '레울 응원 머플러', opt: '니트 · 150 × 18cm', price: 25000, sale: 22500, art: 'muffler', tags: ['group'] }
   ];
   const ART = {
     swim: '<path d="M24 22l10-4h12l10 4 8 11-7 5-5-5v25H28V33l-5 5-7-5z" fill="#3aa0d8"/><path d="M28 44h24" stroke="#fff" stroke-width="3"/><path d="M28 50h24" stroke="#ffd34d" stroke-width="3"/>',
@@ -289,7 +318,18 @@
     pajama: '<path d="M24 22l10-4h12l10 4 8 12-7 4-5-6v28H28V32l-5 6-7-4z" fill="#c9d6ea"/><path d="M28 38h24M28 46h24M28 54h24" stroke="#8aa1c6" stroke-width="2.5"/>',
     pizza: '<path d="M40 16L64 60H16z" fill="#f3b544"/><path d="M16 60h48l-2 4H18z" fill="#c97a2b"/><circle cx="40" cy="36" r="4" fill="#c0392b"/><circle cx="32" cy="50" r="4" fill="#c0392b"/><circle cx="48" cy="50" r="4" fill="#c0392b"/>',
     deco: '<ellipse cx="31" cy="31" rx="11" ry="13" fill="#f28da5"/><ellipse cx="49" cy="29" rx="11" ry="13" fill="#f6c14b"/><path d="M31 44l5 20M49 42l-5 22" stroke="#8a8a8a" stroke-width="1.4"/>',
-    coffee: '<path d="M22 32h32l-3 26H25z" fill="#c7a27c"/><path d="M54 37h4a5 5 0 0 1 0 10h-5" stroke="#c7a27c" stroke-width="3.5" fill="none"/><path d="M31 26c0-4 4-4 4-8M41 26c0-4 4-4 4-8" stroke="#8c7259" stroke-width="2" fill="none"/>'
+    coffee: '<path d="M22 32h32l-3 26H25z" fill="#c7a27c"/><path d="M54 37h4a5 5 0 0 1 0 10h-5" stroke="#c7a27c" stroke-width="3.5" fill="none"/><path d="M31 26c0-4 4-4 4-8M41 26c0-4 4-4 4-8" stroke="#8c7259" stroke-width="2" fill="none"/>',
+    grill: '<path d="M18 40c0-12 10-18 22-18s22 6 22 18z" fill="#2f4a35"/><rect x="14" y="40" width="52" height="7" rx="3" fill="#3a3a3a"/><path d="M22 47l-6 16M58 47l6 16M40 47v16" stroke="#3a3a3a" stroke-width="3"/><path d="M31 18c0-4 4-4 4-8M43 18c0-4 4-4 4-8" stroke="#e08a3a" stroke-width="2.5" fill="none"/>',
+    char: '<rect x="14" y="44" width="52" height="7" rx="3" fill="#3a3a3a"/><path d="M20 44l8-10 10 5 8-9 10 14z" fill="#555"/><path d="M40 16c6 6 6 12 0 16-6-4-6-10 0-16z" fill="#f08a4b"/><path d="M22 51l-4 13M58 51l4 13" stroke="#3a3a3a" stroke-width="3"/>',
+    meat: '<ellipse cx="34" cy="44" rx="18" ry="12" fill="#d9786a"/><path d="M20 40c8 4 20 4 28-2M22 48c8 3 18 3 24-1" stroke="#f6d3c8" stroke-width="3" fill="none"/><ellipse cx="55" cy="36" rx="12" ry="9" fill="#b8564a"/><path d="M48 34c4 2 10 2 14-1" stroke="#f0c2b5" stroke-width="2.5" fill="none"/>',
+    shrimp: '<path d="M54 26c-14-6-32 2-34 18-1 9 6 15 14 14 6-1 9-6 6-11" stroke="#f08a4b" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M56 22l8-6M57 28h9" stroke="#f08a4b" stroke-width="2.5"/><rect x="44" y="52" width="22" height="8" rx="4" fill="#b8564a"/>',
+    veg: '<path d="M40 64C22 60 14 44 20 26c10 4 18 12 20 24 2-12 10-20 20-24 6 18-2 34-20 38z" fill="#5fa55a"/><path d="M40 64V36" stroke="#3f7a3c" stroke-width="2.5"/>',
+    bear: '<circle cx="28" cy="24" r="7" fill="#9c7656"/><circle cx="52" cy="24" r="7" fill="#9c7656"/><circle cx="40" cy="34" r="15" fill="#b58a63"/><ellipse cx="40" cy="39" rx="6" ry="4.5" fill="#e8d3bb"/><circle cx="34" cy="31" r="1.8" fill="#2b2b2b"/><circle cx="46" cy="31" r="1.8" fill="#2b2b2b"/><rect x="30" y="13" width="20" height="7" rx="2" fill="#1f1f1f"/><rect x="28" y="19" width="24" height="2.5" fill="#b09479"/><path d="M26 48h28l3 18H23z" fill="#1f1f1f"/><path d="M40 48v18" stroke="#b09479" stroke-width="2"/><circle cx="36" cy="55" r="1.4" fill="#e2c49f"/><circle cx="44" cy="55" r="1.4" fill="#e2c49f"/>',
+    keyring: '<circle cx="40" cy="12" r="6" fill="none" stroke="#9a9a9a" stroke-width="2.5"/><path d="M40 18v6M40 24l-16 10M40 24v12M40 24l16 10" stroke="#9a9a9a" stroke-width="1.5"/><g fill="#b58a63"><circle cx="24" cy="44" r="9"/><circle cx="40" cy="46" r="9"/><circle cx="56" cy="44" r="9"/></g><rect x="17" y="33" width="14" height="5" rx="1" fill="#1f1f1f"/><path d="M34 36h12l-2-5h-8z" fill="#fff"/><rect x="49" y="34" width="14" height="4" rx="2" fill="#e9a5b6"/><g fill="#2b2b2b"><circle cx="21" cy="43" r="1.2"/><circle cx="27" cy="43" r="1.2"/><circle cx="37" cy="45" r="1.2"/><circle cx="43" cy="45" r="1.2"/><circle cx="53" cy="43" r="1.2"/><circle cx="59" cy="43" r="1.2"/></g>',
+    merry: '<circle cx="40" cy="12" r="5" fill="none" stroke="#9a9a9a" stroke-width="2.5"/><path d="M40 17v5" stroke="#9a9a9a" stroke-width="1.5"/><circle cx="29" cy="32" r="6" fill="#f2efe9"/><circle cx="51" cy="32" r="6" fill="#f2efe9"/><circle cx="40" cy="41" r="14" fill="#f2efe9"/><ellipse cx="40" cy="45" rx="5.5" ry="4" fill="#e2d6c8"/><circle cx="35" cy="39" r="1.6" fill="#2b2b2b"/><circle cx="45" cy="39" r="1.6" fill="#2b2b2b"/><path d="M27 30c4-9 22-9 26 0z" fill="#c0392b"/><circle cx="40" cy="22" r="3" fill="#fff"/><path d="M28 54h24v6H28z" fill="#2e7d4f"/>',
+    jersey: '<path d="M24 22l10-5h12l10 5 9 11-7 6-5-5v28H27V34l-5 5-7-6z" fill="#13274f"/><path d="M34 17c2 4 10 4 12 0" stroke="#c9a45c" stroke-width="2.5" fill="none"/><text x="40" y="54" text-anchor="middle" font-size="15" font-weight="700" fill="#c9a45c" font-family="Arial,sans-serif">10</text>',
+    acryl: '<circle cx="40" cy="12" r="5" fill="none" stroke="#9a9a9a" stroke-width="2.5"/><rect x="24" y="18" width="32" height="46" rx="8" fill="#eef2fa" stroke="#9fb3d6" stroke-width="1.5"/><path d="M31 32l5-3h8l5 3 5 6-4 3-3-3v16H33V38l-3 3-4-3z" fill="#13274f"/><path d="M36 29c1 2 7 2 8 0" stroke="#c9a45c" stroke-width="1.5" fill="none"/>',
+    muffler: '<rect x="10" y="30" width="60" height="16" rx="2" fill="#13274f"/><rect x="10" y="35" width="60" height="6" fill="#c9a45c"/><path d="M13 46v10M19 46v10M25 46v10M55 46v10M61 46v10M67 46v10" stroke="#13274f" stroke-width="2.5"/>'
   };
   // 주문 감사 쿠폰은 주문한 브랜드가 아닌 다른 이랜드 브랜드로 발급해 매장 방문(크로스 셀)을 유도한다.
   const CROSS = {
@@ -298,7 +338,10 @@
     butter: { title: '애슐리퀸즈 매장 식사 15% 할인', pct: '15%' },
     ashley: { title: '스파오 · 스파오키즈 10% 할인', pct: '10%' },
     pizzamall: { title: '스파오 · 스파오키즈 10% 할인', pct: '10%' },
-    cafe: { title: '스파오키즈 10% 할인', pct: '10%' }
+    cafe: { title: '스파오키즈 10% 할인', pct: '10%' },
+    kgarden: { title: '애슐리퀸즈 매장 식사 15% 할인', pct: '15%' },
+    kenny: { title: '서울 이랜드 FC 홈경기 예매 20% 할인', pct: '20%' },
+    fc: { title: '애슐리퀸즈 매장 식사 15% 할인 · FC 스폰서', pct: '15%' }
   };
   const goodArt = (g) => `<svg viewBox="0 0 80 80" aria-hidden="true"><rect width="80" height="80" fill="${ELAND[g.brand].soft}"/>${ART[g.art]}</svg>`;
   const brandTag = (b) => `<span class="brand-tag" style="background:${ELAND[b].c};color:${ELAND[b].fg}">${ELAND[b].name}</span>`;
@@ -321,6 +364,11 @@
     return GOODS.map((g) => ({ g, hit: prof.filter(([k]) => g.tags.includes(k)) }))
       .filter((x) => x.hit.length).sort((a, b) => b.hit.length - a.hit.length);
   }
+  const cartGoods = () => GOODS.filter((g) => ui.cart.items[g.sku]);
+  const cartFac = () => cartGoods().find((g) => g.fac);
+  const bbqBooked = (r) => (r.orders || []).some((o) => o.bbq);
+  const bbqNights = (r) => Array.from({ length: nights(r) }, (_, i) => iso(addDays(parse(r.checkIn), i)));
+  const bbqFull = (r, d, t) => d === r.checkIn && t === '18:30';
   const cartCount = () => Object.values(ui.cart.items).reduce((a, b) => a + b, 0);
   const cartSum = () => GOODS.reduce((s, g) => s + (ui.cart.items[g.sku] || 0) * g.sale, 0);
   const orderTitle = (o) => `${goodBy(o.items[0].sku).name}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}`;
@@ -344,7 +392,7 @@
   /* ---------------- ui primitives ---------------- */
   const app = $('#app');
   const overlay = $('#overlay-root');
-  const ui = { tab: 'upcoming', ci: null, key: null, fab: '', cart: null };
+  const ui = { tab: 'upcoming', ci: null, key: null, fab: '', cart: null, shopCat: 'all' };
   let timers = [];
   let after = null;
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
@@ -800,6 +848,37 @@
       : `<button class="add-btn" data-act="qty" data-sku="${g.sku}" data-d="1">${I.plus}담기</button>`;
   }
 
+  const goodRow = (g) => `<div class="good"><div class="g-art">${goodArt(g)}</div>
+    <div class="g-info">${brandTag(g.brand)}<b>${g.name}${g.badge ? ` <span class="g-badge">${g.badge}</span>` : ''}</b><small>${g.opt}</small>
+    <div class="price"><em>${offPct(g)}%</em><strong>${won(g.sale)}</strong><del>${won(g.price)}</del></div></div>${stepper(g)}</div>`;
+  const reviewRow = (k) => `<div class="hscroll rv-row">${REVIEWS[k].map(([q, src]) => `<figure class="rv"><blockquote>“${q}”</blockquote><figcaption>${src}</figcaption></figure>`).join('')}</div>`;
+  function bbqBook(r) {
+    const b = ui.cart.bbq || {};
+    return `<div class="bbq-book" id="bbqBook"><div class="bb-hd">${I.clock}<b>이용 날짜 · 시간</b><small>17:00 – 21:30 · 테이블당 2시간</small></div>
+      <div class="bb-row">${bbqNights(r).map((d) => `<button class="${b.date === d ? 'on' : ''}" data-act="bbqSlot" data-k="date" data-v="${d}">${fmtS(d)}</button>`).join('')}</div>
+      <div class="bb-row">${BBQ_TIMES.map((t) => { const f = b.date && bbqFull(r, b.date, t); return `<button class="${b.time === t ? 'on' : ''}" data-act="bbqSlot" data-k="time" data-v="${t}" ${f ? 'disabled' : ''}>${t}${f ? '<small>마감</small>' : ''}</button>`; }).join('')}</div>
+      <p>${I.pin}본관 앞 가든 BBQ존 · 그릴·숯·도구 세팅 완료 상태로 안내 · 우천 시 무료 취소</p></div>`;
+  }
+  function shopSec(cat, r) {
+    const list = GOODS.filter((g) => catOf(g) === cat);
+    if (cat === 'eland') return `<section class="sec"><div class="sec-hd"><h2>이랜드 브랜드</h2><span class="muted sm">체크인 시 객실 비치</span></div>
+      <div class="goods">${list.map(goodRow).join('')}</div></section>`;
+    if (cat === 'bbq') return `<section class="sec" id="sec-bbq"><div class="sec-hd"><h2>가든 BBQ 예약</h2><span class="muted sm">세트 · 셀프존 중 1개</span></div>
+      ${bbqBook(r)}
+      <div class="goods">${list.filter((g) => g.fac).map(goodRow).join('')}</div>
+      <h3 class="sub-hd">BBQ 재료 추가 주문</h3>
+      <div class="goods">${list.filter((g) => !g.fac).map(goodRow).join('')}</div>
+      <p class="hint">${I.info}재료는 예약 시간에 BBQ 테이블로 준비돼요.${r.kitchen ? ' 취사형 객실은 BBQ 예약 없이 객실 냉장고로 받을 수도 있어요.' : ''}</p>
+      <h3 class="sub-hd">투숙객 BBQ 후기</h3>${reviewRow('bbq')}</section>`;
+    if (cat === 'kgoods') return `<section class="sec"><div class="sec-hd"><h2>켄싱턴 굿즈</h2><span class="muted sm">온라인 구매 · 택배 배송</span></div>
+      <p class="shop-why">${I.crown}<span>호텔리어 유니폼을 입은 켄싱턴 마스코트 케니베어</span></p>
+      <div class="goods">${list.map(goodRow).join('')}</div>
+      <h3 class="sub-hd">케니베어 화제의 소식</h3>${reviewRow('kgoods')}</section>`;
+    return `<section class="sec"><div class="sec-hd"><h2>서울 이랜드 FC 공식 굿즈</h2><span class="muted sm">레울샵 정품</span></div>
+      <p class="shop-why">${I.spark}<span>K리그 서울 이랜드 FC 2025 시즌 공식 상품 · 택배 배송</span></p>
+      <div class="goods">${list.map(goodRow).join('')}</div></section>`;
+  }
+
   function viewShop(id) {
     const r = getRes(id);
     if (!r || !visibleRes().includes(r) || r.status === 'completed') return notFound();
@@ -823,19 +902,16 @@
         <p>${r.hotel} · ${fmtS(r.checkIn)} · ${r.room}</p>
         <div class="sh-perks"><div><b>최대 ${Math.max(...GOODS.map(offPct))}%</b><span>투숙객 전용가</span></div><div><b>${POINT_RATE * 100}%</b><span>E.POINT 적립</span></div><div><b>객실 비치</b><span>체크인 시 준비</span></div></div>
       </section>
-      <section class="sec"><div class="sec-hd"><h2>${esc(me().name)}님 예약 맞춤 추천</h2></div>
+      <nav class="shop-tabs" aria-label="상품 카테고리">${CATS.map(([k, l]) => `<button class="${ui.shopCat === k ? 'on' : ''}" data-act="shopCat" data-v="${k}">${l}</button>`).join('')}</nav>
+      ${ui.shopCat === 'all' ? `<section class="sec"><div class="sec-hd"><h2>${esc(me().name)}님 예약 맞춤 추천</h2></div>
         <p class="shop-why">${I.spark}<span>${prof.map(([, l]) => l).join(' · ')} 예약을 분석해 골랐어요</span></p>
-        <div class="hscroll pick-row">${picks(r).map(({ g, hit }) => `<div class="pick"><div class="pk-art">${goodArt(g)}<em>-${offPct(g)}%</em></div>
+        <div class="hscroll pick-row">${picks(r).slice(0, 8).map(({ g, hit }) => `<div class="pick"><div class="pk-art">${goodArt(g)}<em>-${offPct(g)}%</em></div>
           ${brandTag(g.brand)}<b>${g.name}</b><small class="why">${hit.map(([, l]) => l).join(' · ')} 추천</small>
           <div class="price"><strong>${won(g.sale)}</strong><del>${won(g.price)}</del></div>${stepper(g)}</div>`).join('')}</div>
       </section>
-      <div class="section-gap"></div>
-      <section class="sec"><div class="sec-hd"><h2>전체 상품 <span class="muted" style="font-size:15px">${GOODS.length}</span></h2></div>
-        <div class="goods">${GOODS.map((g) => `<div class="good"><div class="g-art">${goodArt(g)}</div>
-          <div class="g-info">${brandTag(g.brand)}<b>${g.name}</b><small>${g.opt}</small>
-          <div class="price"><em>${offPct(g)}%</em><strong>${won(g.sale)}</strong><del>${won(g.price)}</del></div></div>${stepper(g)}</div>`).join('')}</div>
-        <p class="hint">${I.info}주문 상품은 체크인 시 객실에 비치되며(냉장 상품은 객실 냉장고), 체크인 전까지 무료로 취소할 수 있습니다.</p>
-      </section>
+      <div class="section-gap"></div>` : ''}
+      ${CATS.slice(1).filter(([k]) => ui.shopCat === 'all' || ui.shopCat === k).map(([k]) => shopSec(k, r)).join('<div class="section-gap"></div>')}
+      <section class="sec"><p class="hint">${I.info}이랜드 브랜드 상품은 체크인 시 객실에 비치되며(냉장 상품은 객실 냉장고), 굿즈는 택배 배송 또는 객실 비치를 선택할 수 있어요. 모든 주문은 체크인 전까지 무료로 취소할 수 있습니다.</p></section>
       <div class="sticky-cta">${cnt ? `<div class="note">E.POINT <b style="color:var(--gold-d)">${Math.floor(sum * POINT_RATE).toLocaleString()}P</b> 적립 예정 · 체크인 전까지 무료 취소</div>` : ''}
         <button class="btn btn-gold btn-block" data-act="preCheckout" ${cnt ? '' : 'disabled'}>${cnt ? `${cnt}개 · ${won(sum)} 주문하기` : '상품을 담아 주세요'}</button></div>
     </div>`;
@@ -845,8 +921,14 @@
     const c = ui.cart; const r = getRes(c.id); const u = me();
     const sum = cartSum(); const use = c.usePoint ? Math.min(u.point, sum) : 0; const pay = sum - use;
     const opt = (k, v, label) => `<button class="${c[k] === v ? 'on' : ''}" data-act="coOpt" data-k="${k}" data-v="${v}">${label}</button>`;
-    return `<div class="co-lines">${GOODS.filter((g) => c.items[g.sku]).map((g) => `<div><span>${ELAND[g.brand].ko} · ${g.name} × ${c.items[g.sku]}</span><b>${won(g.sale * c.items[g.sku])}</b></div>`).join('')}</div>
-      <div class="demo-group"><label>받는 방법</label><div class="seg">${opt('delivery', 'room', '체크인 시 객실 비치')}${opt('delivery', 'front', '프런트 수령')}</div></div>
+    const gs = cartGoods(); const fac = cartFac();
+    const roomItems = gs.some((g) => catOf(g) === 'eland' || (catOf(g) === 'bbq' && !fac && !bbqBooked(r)));
+    return `<div class="co-lines">${gs.map((g) => `<div><span>${ELAND[g.brand].ko} · ${g.name} × ${c.items[g.sku]}</span><b>${won(g.sale * c.items[g.sku])}</b></div>`).join('')}</div>
+      ${fac ? `<div class="co-info">${I.clock}<span><b>가든 BBQ ${fmtS(c.bbq.date)} ${c.bbq.time}</b><small>${fac.name} · 본관 앞 가든 BBQ존${gs.some((g) => catOf(g) === 'bbq' && !g.fac) ? ' · 추가 재료 함께 세팅' : ''}</small></span></div>` : ''}
+      ${!fac && bbqBooked(r) && gs.some((g) => catOf(g) === 'bbq') ? `<div class="co-info">${I.clock}<span><b>예약된 가든 BBQ 테이블로 준비</b><small>${fmtS(r.orders.find((o) => o.bbq).bbq.date)} ${r.orders.find((o) => o.bbq).bbq.time}</small></span></div>` : ''}
+      ${roomItems ? `<div class="demo-group"><label>받는 방법</label><div class="seg">${opt('delivery', 'room', '체크인 시 객실 비치')}${opt('delivery', 'front', '프런트 수령')}</div></div>` : ''}
+      ${gs.some((g) => SHIP_CATS.includes(catOf(g))) ? `<div class="demo-group"><label>굿즈 받는 방법</label><div class="seg">${opt('ship', 'parcel', '택배 배송 (무료)')}${opt('ship', 'room', '객실 비치')}</div>
+        ${c.ship === 'parcel' ? `<p class="co-addr">${I.pin}회원정보 주소 · 서울 영등포구 국제금융로 · 주문 후 2~3일 내 출고</p>` : ''}</div>` : ''}
       <div class="demo-group"><label>결제 수단</label><div class="seg">${isPrimary() ? opt('pay', 'card', `${r.pay.label} ****${r.pay.last4}`) : ''}${opt('pay', 'epay', 'E.PAY 간편결제')}</div></div>
       <button class="check co-point ${c.usePoint ? 'on' : ''}" data-act="coPoint" role="checkbox" aria-checked="${!!c.usePoint}"><span class="cb">${I.check}</span>E.POINT 사용<span class="req">보유 ${u.point.toLocaleString()}P</span></button>
       <dl class="kv co-sum"><div><dt>상품 금액</dt><dd>${won(sum)}</dd></div>${use ? `<div><dt>E.POINT 사용</dt><dd>-${won(use)}</dd></div>` : ''}
@@ -859,6 +941,7 @@
     const c = ui.cart; const r = getRes(c.id);
     c.delivery = c.delivery || 'room';
     c.pay = c.pay || (isPrimary() ? 'card' : 'epay');
+    c.ship = c.ship || 'parcel';
     sheet('주문 확인', `<div id="coBody">${coBody()}</div>`, `<b style="color:var(--ink)">${r.hotel}</b> · ${fmtS(r.checkIn)} 체크인 · 체크인 전까지 무료 취소`);
   }
 
@@ -866,9 +949,15 @@
     const c = ui.cart; const r = getRes(c.id); const u = me();
     const items = GOODS.filter((g) => c.items[g.sku]).map((g) => ({ sku: g.sku, qty: c.items[g.sku] }));
     const sum = cartSum(); const use = c.usePoint ? Math.min(u.point, sum) : 0; const pay = sum - use;
+    const gs = cartGoods(); const fac = cartFac();
+    const bbq = fac ? { ...c.bbq, name: fac.name } : null;
+    const ship = gs.some((g) => SHIP_CATS.includes(catOf(g))) ? c.ship : null;
+    const roomItems = gs.some((g) => catOf(g) === 'eland' || (catOf(g) === 'bbq' && !fac && !bbqBooked(r)));
+    const parts = [roomItems && (c.delivery === 'room' ? '체크인 시 객실 비치' : '프런트 수령'), bbq && `가든 BBQ ${fmtS(bbq.date)} ${bbq.time}`,
+      ship && (ship === 'parcel' ? '굿즈 택배 배송' : '굿즈 객실 비치')].filter(Boolean);
     const o = {
       no: 'EL' + String(Date.now()).slice(-8), items, sum, use, total: pay, earn: Math.floor(pay * POINT_RATE),
-      delivery: c.delivery === 'room' ? '체크인 시 객실 비치' : '프런트 수령',
+      delivery: parts.join(' · ') || '가든 BBQ 테이블 준비', recv: roomItems ? c.delivery : null, bbq, ship,
       payBy: c.pay === 'card' ? `${r.pay.label} ****${r.pay.last4}` : 'E.PAY 간편결제',
       by: u.name, coupon: CROSS[goodBy(items[0].sku).brand]
     };
@@ -878,7 +967,7 @@
     ld.innerHTML = '<div><div class="spinner"></div><p>이랜드 주문을 접수하고 있습니다</p></div>';
     document.body.appendChild(ld);
     setTimeout(() => {
-      ld.remove(); u.point -= use; (r.orders = r.orders || []).push(o); save(); ui.cart = null;
+      ld.remove(); u.point -= use; (r.orders = r.orders || []).push(o); save(); ui.cart = null; ui.shopCat = 'all';
       go(`#/shop/${r.id}/done`); vibrate(60);
     }, 1400);
   }
@@ -893,7 +982,9 @@
       <div class="done shop-done">
         <div class="done-mark">${I.bag}</div>
         <h2>사전 주문이 완료되었습니다</h2>
-        <p>${o.delivery === '프런트 수령' ? '체크인 시 프런트에서 받아 가세요.' : '체크인하시면 객실에 미리 준비해 둘게요.'}<br/>${r.hotel} · ${fmtS(r.checkIn)} 체크인</p>
+        <p>${[o.recv === 'front' ? '이랜드 상품은 체크인 시 프런트에서 받아 가세요.' : o.recv ? '체크인하시면 객실에 미리 준비해 둘게요.' : '',
+          o.bbq ? `<b>${fmtS(o.bbq.date)} ${o.bbq.time}</b> 가든 BBQ존에 테이블을 세팅해 둘게요.` : '',
+          o.ship === 'parcel' ? '굿즈는 2~3일 내 택배로 출고돼요.' : o.ship === 'room' ? '굿즈는 체크인 시 객실에 비치해 둘게요.' : ''].filter(Boolean).join('<br/>') || '체크인하시면 객실에 미리 준비해 둘게요.'}<br/>${r.hotel} · ${fmtS(r.checkIn)} 체크인</p>
         <div class="box receipt"><dl class="kv">
           <div><dt>주문번호</dt><dd>${o.no}</dd></div>
           ${o.items.map((it) => { const g = goodBy(it.sku); return `<div><dt>${ELAND[g.brand].ko} · ${g.name} × ${it.qty}</dt><dd>${won(g.sale * it.qty)}</dd></div>`; }).join('')}
@@ -925,7 +1016,7 @@
   const NO_RES = ['start', 'menu', 'human', 'bye', 'rate', 'fallback'];
   const KEYWORDS = [[/얼리/, 'early'], [/레이트|늦게/, 'late'], [/체크인|체크아웃/, 'checkin'], [/수건|어메니티/, 'towel'], [/베드|침대/, 'bed'],
     [/청소|하우스키핑/, 'hk'], [/조식|아침/, 'bf'], [/애슐리|저녁|식당|레스토랑|다이닝|룸서비스/, 'dining'], [/셔틀|버스/, 'shuttle'],
-    [/관광|추천|여행|가볼|남이섬/, 'tour'], [/주문|이랜드|스파오|쇼핑/, 'shop'], [/문|도어|키|안 열/, 'door'], [/직원|호출/, 'staff'],
+    [/바베큐|바비큐|bbq|그릴/i, 'bbq'], [/관광|추천|여행|가볼|남이섬/, 'tour'], [/주문|이랜드|스파오|쇼핑|굿즈|베어|곰|유니폼|fc/i, 'shop'], [/문|도어|키|안 열/, 'door'], [/직원|호출/, 'staff'],
     [/상담|사람|연결/, 'human'], [/고마|감사|종료|끝/, 'bye']];
 
   function flow(id, arg) {
@@ -975,7 +1066,14 @@
         ccard(I.bath, '하우스키핑 설정', [['요청번호', reqNo()], ['설정', arg === 'DND' ? '방해 금지' : arg]])], opts: endOpts() };
       case 'dining': return { say: ['켄싱턴리조트 가평의 다이닝을 안내해 드릴게요.',
         ccard(I.coffee, '리조트 다이닝', [['더 테라스 · 조식 뷔페', '07:00 – 10:00 · 1F'], ['애슐리퀸즈 가평점', '11:00 – 21:00 · B1'], ['라운지 바', '17:00 – 24:00 · 2F'], ['룸서비스', '24시간']])],
-        opts: [{ label: '조식 예약', to: 'bf' }, { label: '애슐리퀸즈 저녁 예약', to: 'ashley' }, { label: '처음으로', to: 'menu' }] };
+        opts: [{ label: '조식 예약', to: 'bf' }, { label: '애슐리퀸즈 저녁 예약', to: 'ashley' }, { label: '가든 BBQ 예약', to: 'bbq' }, { label: '처음으로', to: 'menu' }] };
+      case 'bbq': {
+        const say = ['본관 앞 <b>가든 BBQ존</b>은 17:00 – 21:30에 운영해요. 그릴·숯·도구가 세팅된 테이블에서 바로 즐기실 수 있어요.',
+          ccard(I.coffee, '가든 BBQ 메뉴', GOODS.filter((g) => g.fac).map((g) => [g.name, won(g.sale)])),
+          `투숙객 후기: “${REVIEWS.bbq[0][0]}”`];
+        if (preState(r) !== 'open') say.push(preState(r) === 'soon' ? `BBQ 예약은 사전 주문이 열리는 <b>${fmtDT(preStart(r))}</b>부터 앱에서 할 수 있어요.` : '체크인 후에는 프런트에서 당일 BBQ를 신청하실 수 있어요.');
+        return { say, opts: (preState(r) === 'open' ? [{ label: '가든 BBQ 예약하기', go: `#/shop/${r.id}`, cat: 'bbq' }] : []).concat({ label: '처음으로', to: 'menu' }) };
+      }
       case 'bf': return { say: [`${fmtS(iso(addDays(parse(r.checkIn), 1)))} 조식, 몇 시로 예약할까요? (${r.adults + r.children}명 기준)`],
         opts: ['07:30', '08:30', '09:30'].map((t) => ({ label: t, to: 'bfOk', arg: t })) };
       case 'bfOk': return { say: ['조식 예약을 완료했어요. 입장 시 객실 번호만 말씀해 주세요.',
@@ -1084,6 +1182,7 @@
   function chatPick(o) {
     chat.msgs.push({ from: 'me', m: esc(o.label), at: nowT() });
     chat.opts = []; renderChatOpts(); renderChatBody();
+    if (o.cat) ui.shopCat = o.cat;
     if (o.go) { chat.busy = true; chatLater(() => { chat.busy = false; closeChat(); go(o.go); }, 450); return; }
     chatRun(o.to, o.arg);
   }
@@ -1115,6 +1214,7 @@
     const hit = routes.find(([re]) => re.test(path));
     if (!hit) { location.replace('#/'); return; }
     app.innerHTML = hit[1](...path.match(hit[0]).slice(1));
+    if (keepScroll && app.firstElementChild) app.firstElementChild.classList.add('still');
     const isKey = !!$('.key-page');
     document.querySelector('meta[name="theme-color"]').setAttribute('content', isKey ? '#161616' : '#ffffff');
     renderFab();
@@ -1229,16 +1329,42 @@
     chatClose: () => closeChat(),
     chatReset: () => { chatClear(); chatRun('start'); },
     chatPick: (el) => { const o = chat.opts[Number(el.dataset.i)]; if (o && !chat.busy) chatPick(o); },
-    chatGo: (el) => { closeChat(); go(el.dataset.href); },
+    chatGo: (el) => { closeChat(); if (el.dataset.cat) ui.shopCat = el.dataset.cat; go(el.dataset.href); },
+    shopCat: (el) => {
+      ui.shopCat = el.dataset.v; refresh();
+      const t = $('.shop-tabs'); if (t && window.scrollY > t.offsetTop) window.scrollTo(0, t.offsetTop);
+    },
+    bbqSlot: (el) => {
+      const r = getRes(ui.cart.id); const b = ui.cart.bbq = ui.cart.bbq || {};
+      b[el.dataset.k] = el.dataset.v;
+      if (b.date && b.time && bbqFull(r, b.date, b.time)) delete b.time;
+      $('#bbqBook').outerHTML = bbqBook(r);
+    },
     qty: (el) => {
-      const c = ui.cart; const k = el.dataset.sku;
-      const q = Math.max(0, Math.min(9, (c.items[k] || 0) + Number(el.dataset.d)));
+      const c = ui.cart; const k = el.dataset.sku; const g = goodBy(k); const d = Number(el.dataset.d);
+      if (d > 0 && catOf(g) === 'bbq' && !g.fac && !cartFac() && !bbqBooked(getRes(c.id)) && !getRes(c.id).kitchen) {
+        toast('BBQ 재료는 가든 BBQ 세트나 셀프 BBQ존 예약과 함께 주문할 수 있어요.'); return;
+      }
+      if (d > 0 && g.fac) {
+        if (c.items[k]) { toast('BBQ 테이블은 예약당 1개만 선택할 수 있어요.'); return; }
+        GOODS.filter((x) => x.fac).forEach((x) => delete c.items[x.sku]);
+      }
+      const q = Math.max(0, Math.min(9, (c.items[k] || 0) + d));
       if (q) c.items[k] = q; else delete c.items[k];
       const row = $('.pick-row'); const x = row ? row.scrollLeft : 0;
       refresh();
       const row2 = $('.pick-row'); if (row2) row2.scrollLeft = x;
     },
-    preCheckout: () => checkoutSheet(),
+    preCheckout: () => {
+      const b = ui.cart.bbq || {};
+      if (cartFac() && !(b.date && b.time)) {
+        if (ui.shopCat !== 'all') ui.shopCat = 'bbq';
+        refresh(); toast('가든 BBQ 이용 날짜와 시간을 선택해 주세요.');
+        const bk = $('#bbqBook'); if (bk) bk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      checkoutSheet();
+    },
     coOpt: (el) => { ui.cart[el.dataset.k] = el.dataset.v; $('#coBody').innerHTML = coBody(); },
     coPoint: () => { ui.cart.usePoint = !ui.cart.usePoint; $('#coBody').innerHTML = coBody(); },
     placeOrder: () => placeOrder(),
