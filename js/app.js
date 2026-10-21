@@ -33,6 +33,9 @@
     clock: P('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>'),
     gift: P('<rect x="3.5" y="9" width="17" height="11.5" rx="1"/><path d="M2.5 9h19M12 9v11.5M12 9S10.5 4 8 4.5 7 9 12 9zm0 0s1.5-5 4-4.5S17 9 12 9z"/>'),
     crown: P('<path d="M4 18l-1-10 5 4 4-7 4 7 5-4-1 10z"/><path d="M4 21h16"/>'),
+    chat: P('<path d="M4 5.5h16v10.5H10l-4.5 3.5V16H4z"/><path d="M8 9.5h8M8 12.5h5"/>'),
+    send: P('<path d="M4 12l16-7.5-6 15.5-2.6-6.4z"/><path d="M11.4 13.6L20 4.5"/>'),
+    refresh: P('<path d="M19.5 11a7.5 7.5 0 1 0-2.2 5.3"/><path d="M19.5 5v6h-6"/>'),
     bag: P('<path d="M5 8h14l-1 12.5H6z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'),
     spark: P('<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/>'),
     swap: P('<path d="M4 8h14l-4-4M20 16H6l4 4"/>'),
@@ -394,6 +397,7 @@
         <a href="#/reservations" data-act="closeOverlay">${I.list}나의 예약</a>
         <button data-act="openKey">${I.key}모바일 키${keyRes.length ? `<span class="chip chip-gold badge">${keyRes.length}</span>` : ''}</button>
         <button data-act="openShop">${I.bag}이랜드 사전 주문</button>
+        <button data-act="chatOpen">${I.chat}AI 컨시어지</button>
         <button data-act="soon">${I.gift}프로모션</button>
         <button data-act="soon">${I.crown}멤버십</button>
         <hr/>
@@ -426,6 +430,25 @@
       document.body.appendChild(el);
     }
     el.className = `demo-fab ${ui.fab}`;
+    let cf = $('.chat-fab');
+    if (!cf) {
+      cf = document.createElement('button');
+      cf.dataset.act = 'chatOpen';
+      cf.setAttribute('aria-label', 'AI 컨시어지 채팅 열기');
+      cf.innerHTML = `${I.chat}<span class="cf-dot"></span>`;
+      document.body.appendChild(cf);
+      if (!sessionStorage.getItem('kh-chat-tip')) {
+        sessionStorage.setItem('kh-chat-tip', '1');
+        setTimeout(() => {
+          if (chat.open || !$('.chat-fab') || $('.chat-fab').offsetParent === null) return;
+          const tip = document.createElement('div');
+          tip.className = 'chat-tip'; tip.textContent = 'AI 컨시어지에게 무엇이든 물어보세요';
+          document.body.appendChild(tip);
+          setTimeout(() => { tip.classList.add('out'); setTimeout(() => tip.remove(), 300); }, 4200);
+        }, 2000);
+      }
+    }
+    cf.className = `chat-fab ${ui.fab}`;
   }
   /* ---------------- shared reservation pieces ---------------- */
   function strip(r) {
@@ -887,6 +910,193 @@
   function notFound() {
     return blocked(I.list, '예약을 찾을 수 없습니다', '현재 사용자 시점에서 확인할 수 없는 예약입니다.', `<a class="btn btn-line btn-block" href="#/reservations">나의 예약으로</a>`);
   }
+  /* ---------------- AI 컨시어지 챗봇 (목업: 정해진 데모 플로우를 선택지로 전개) ----------------
+   * 실제 LLM 없이 노드(flow) + 선택지(opts)로 대화를 진행한다. 자유 입력은 키워드로 노드에 매칭한다.
+   * 예약 상태·사용자 시점(주 예약자/동숙자)에 따라 답변과 선택지가 달라진다. */
+  const chat = { open: false, msgs: [], opts: [], busy: false, typing: false, timers: [] };
+  const chatLater = (fn, ms) => chat.timers.push(setTimeout(fn, ms));
+  const chatRes = () => visibleRes().find((x) => x.status !== 'completed');
+  const nowT = () => { const d = new Date(); const h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${pad(d.getMinutes())}`; };
+  const reqNo = () => 'RQ' + String(Date.now()).slice(-6);
+  const ccard = (icon, title, rows, cta) => ({ icon, title, rows, cta });
+  const MENU = [['체크인 · 체크아웃', 'checkin'], ['객실 서비스 요청', 'room'], ['다이닝 · 조식 예약', 'dining'], ['주변 관광 추천', 'tour'], ['이랜드 사전 주문', 'shop'], ['객실 문이 안 열려요', 'door'], ['상담원 연결', 'human']];
+  const menuOpts = () => MENU.map(([label, to]) => ({ label, to }));
+  const endOpts = () => [{ label: '다른 도움이 필요해요', to: 'menu' }, { label: '대화 종료', to: 'bye' }];
+  const NO_RES = ['start', 'menu', 'human', 'bye', 'rate', 'fallback'];
+  const KEYWORDS = [[/얼리/, 'early'], [/레이트|늦게/, 'late'], [/체크인|체크아웃/, 'checkin'], [/수건|어메니티/, 'towel'], [/베드|침대/, 'bed'],
+    [/청소|하우스키핑/, 'hk'], [/조식|아침/, 'bf'], [/애슐리|저녁|식당|레스토랑|다이닝|룸서비스/, 'dining'], [/셔틀|버스/, 'shuttle'],
+    [/관광|추천|여행|가볼|남이섬/, 'tour'], [/주문|이랜드|스파오|쇼핑/, 'shop'], [/문|도어|키|안 열/, 'door'], [/직원|호출/, 'staff'],
+    [/상담|사람|연결/, 'human'], [/고마|감사|종료|끝/, 'bye']];
+
+  function flow(id, arg) {
+    const r = chatRes(); const u = me();
+    if (!r && !NO_RES.includes(id)) return { say: ['이용 예정인 예약이 없어 해당 안내를 드리기 어려워요. 다른 도움이 필요하신가요?'], opts: menuOpts() };
+    const roomTxt = r && r.status === 'checkedIn' ? `${r.roomNo}호` : '배정 예정 객실';
+    switch (id) {
+      case 'start': return {
+        say: [`안녕하세요, <b>${esc(u.name)}님</b>.<br/>켄싱턴리조트 가평 AI 컨시어지 <b>K</b>입니다.`,
+          r ? `${fmtS(r.checkIn)} 체크인 · ${r.room} 예약을 확인했어요. (${STATUS[r.status].label})<br/>무엇을 도와드릴까요?` : '현재 이용 예정인 예약이 없어요. 무엇을 도와드릴까요?'],
+        opts: menuOpts() };
+      case 'menu': return { say: ['네, 어떤 도움이 필요하세요?'], opts: menuOpts() };
+      case 'checkin': {
+        const say = [`체크인은 <b>${r.inTime}</b>, 체크아웃은 <b>${r.outTime}</b>입니다.`];
+        const opts = [];
+        if (r.status === 'available' && isPrimary()) {
+          say.push('지금 바로 모바일 체크인이 가능해요. 프런트 방문 없이 객실 배정부터 모바일 키 발급까지 앱에서 끝낼 수 있어요.');
+          opts.push({ label: '모바일 체크인 하기', go: `#/checkin/${r.id}` });
+        } else if (r.status === 'available') say.push(`모바일 체크인은 결제정보를 등록한 주 예약자(${S.users.primary.name}님)만 진행할 수 있어요. 체크인이 끝나면 모바일 키가 자동으로 공유됩니다.`);
+        else if (r.status === 'waiting') say.push(`${fmtS(r.checkIn)} ${r.inTime}부터 모바일 체크인이 열려요. 열리면 푸시 알림으로 알려드릴게요.`);
+        else say.push(`이미 체크인이 완료되었어요. 객실은 <b>${r.roomNo}호</b>(${r.floor})입니다.`);
+        if (r.status !== 'checkedIn') opts.push({ label: '얼리 체크인 요청', to: 'early' });
+        opts.push({ label: '레이트 체크아웃 요청', to: 'late' }, { label: '처음으로', to: 'menu' });
+        return { say, opts };
+      }
+      case 'early': return { say: ['해당 날짜의 객실 현황을 확인했어요.', '<b>13:00 얼리 체크인</b>이 가능합니다. 이용료 30,000원은 객실 요금과 함께 정산돼요. 신청할까요?'],
+        opts: [{ label: '신청할게요', to: 'earlyOk' }, { label: '괜찮아요', to: 'menu' }] };
+      case 'earlyOk': return { say: ['얼리 체크인 신청이 완료되었어요.', ccard(I.clock, '얼리 체크인 확정', [['요청번호', reqNo()], ['체크인 시간', `${fmtS(r.checkIn)} 13:00`], ['추가 요금', won(30000)]])], opts: endOpts() };
+      case 'late': return { say: [`${u.grade} 회원 혜택으로 <b>13:00 레이트 체크아웃</b>을 무료로 이용하실 수 있어요. 신청할까요?`],
+        opts: [{ label: '무료로 신청', to: 'lateOk' }, { label: '괜찮아요', to: 'menu' }] };
+      case 'lateOk': return { say: ['레이트 체크아웃이 적용되었어요.', ccard(I.clock, '레이트 체크아웃 확정', [['요청번호', reqNo()], ['체크아웃 시간', `${fmtS(r.checkOut)} 13:00`], ['추가 요금', '무료 · 멤버십 혜택']])], opts: endOpts() };
+      case 'room': return { say: ['어떤 객실 서비스가 필요하세요?'],
+        opts: [{ label: '수건 · 어메니티 추가', to: 'towel' }, { label: '엑스트라 베드', to: 'bed' }, { label: '하우스키핑 시간 지정', to: 'hk' }, { label: '처음으로', to: 'menu' }] };
+      case 'towel': return { say: ['수건을 몇 장 가져다 드릴까요? 어메니티 키트도 함께 준비해 드려요.'],
+        opts: [2, 4, 6].map((n) => ({ label: `수건 ${n}장`, to: 'towelOk', arg: n })) };
+      case 'towelOk': return {
+        say: [r.status === 'checkedIn' ? `요청을 접수했어요. 약 <b>15분</b> 안에 ${roomTxt}로 전달됩니다.` : '요청을 접수했어요. 체크인하시면 객실에 미리 비치해 둘게요.',
+          ccard(I.bath, '객실 서비스 요청', [['요청번호', reqNo()], ['요청 내용', `수건 ${arg}장 + 어메니티 키트`], ['전달 위치', roomTxt], ['진행 상태', '접수 완료']])],
+        follow: r.status === 'checkedIn' ? '하우스키핑 직원이 객실로 출발했어요. 도착하면 노크 후 문 앞에 두고 갈게요.' : '',
+        opts: endOpts() };
+      case 'bed': return { say: [`엑스트라 베드는 1박 40,000원이며, ${nights(r)}박 기준 <b>${won(40000 * nights(r))}</b>입니다. 침구와 함께 준비해 드릴까요?`],
+        opts: [{ label: '신청할게요', to: 'bedOk' }, { label: '괜찮아요', to: 'room' }] };
+      case 'bedOk': return { say: ['엑스트라 베드를 준비해 둘게요.', ccard(I.bed, '엑스트라 베드', [['요청번호', reqNo()], ['기간', `${fmtS(r.checkIn)} ~ ${fmtS(r.checkOut)}`], ['요금', won(40000 * nights(r))]])], opts: endOpts() };
+      case 'hk': return { say: ['하우스키핑 희망 시간을 선택해 주세요.'],
+        opts: ['10:00 – 11:00', '13:00 – 14:00', '15:00 – 16:00'].map((t) => ({ label: t, to: 'hkOk', arg: t })).concat({ label: '방해 금지 (DND)', to: 'hkOk', arg: 'DND' }) };
+      case 'hkOk': return { say: [arg === 'DND' ? '방해 금지를 설정했어요. 체류 기간 동안 하우스키핑을 진행하지 않습니다.' : `체류 기간 동안 매일 <b>${arg}</b>에 하우스키핑을 진행할게요.`,
+        ccard(I.bath, '하우스키핑 설정', [['요청번호', reqNo()], ['설정', arg === 'DND' ? '방해 금지' : arg]])], opts: endOpts() };
+      case 'dining': return { say: ['켄싱턴리조트 가평의 다이닝을 안내해 드릴게요.',
+        ccard(I.coffee, '리조트 다이닝', [['더 테라스 · 조식 뷔페', '07:00 – 10:00 · 1F'], ['애슐리퀸즈 가평점', '11:00 – 21:00 · B1'], ['라운지 바', '17:00 – 24:00 · 2F'], ['룸서비스', '24시간']])],
+        opts: [{ label: '조식 예약', to: 'bf' }, { label: '애슐리퀸즈 저녁 예약', to: 'ashley' }, { label: '처음으로', to: 'menu' }] };
+      case 'bf': return { say: [`${fmtS(iso(addDays(parse(r.checkIn), 1)))} 조식, 몇 시로 예약할까요? (${r.adults + r.children}명 기준)`],
+        opts: ['07:30', '08:30', '09:30'].map((t) => ({ label: t, to: 'bfOk', arg: t })) };
+      case 'bfOk': return { say: ['조식 예약을 완료했어요. 입장 시 객실 번호만 말씀해 주세요.',
+        ccard(I.coffee, '조식 예약 확정', [['예약번호', reqNo()], ['장소', '더 테라스 · 1F'], ['일시', `${fmtS(iso(addDays(parse(r.checkIn), 1)))} ${arg}`], ['인원', `${r.adults + r.children}명`]])], opts: endOpts() };
+      case 'ashley': return { say: ['애슐리퀸즈 가평점 저녁 예약 시간을 골라 주세요. 투숙객은 <b>10% 할인</b>이 적용돼요.'],
+        opts: ['18:00', '19:00', '20:00'].map((t) => ({ label: t, to: 'ashleyOk', arg: t })) };
+      case 'ashleyOk': return { say: ['애슐리퀸즈 가평점 예약을 완료했어요.',
+        ccard(I.coffee, '애슐리퀸즈 예약 확정', [['예약번호', reqNo()], ['일시', `${fmtS(r.checkIn)} ${arg}`], ['인원', `${r.adults + r.children}명`], ['혜택', '투숙객 10% 할인']])], opts: endOpts() };
+      case 'tour': {
+        const { label, items } = recommend(r);
+        return { say: [`<b>${esc(u.name)}님</b>과 비슷한 예약(${label})을 하신 분들은 이런 곳들도 예약하셨어요.`,
+          ccard(I.spark, 'AI 추천 · 적합도', items.slice(0, 3).map((s) => [`${s.name} · ${s.km}km`, `${s.score}%`]))],
+        opts: [{ label: `${items[0].name} 가는 길`, to: 'route' }, { label: '리조트 셔틀 시간표', to: 'shuttle' }, { label: '처음으로', to: 'menu' }] };
+      }
+      case 'route': {
+        const s = recommend(r).items[0];
+        return { say: [`${s.name}까지 리조트에서 <b>${s.km}km</b>, 차로 약 ${Math.round(s.km * 2 + 3)}분 거리예요. 무료 리조트 셔틀을 이용하시면 주차 걱정이 없어요.`],
+          opts: [{ label: '리조트 셔틀 시간표', to: 'shuttle' }, { label: '처음으로', to: 'menu' }] };
+      }
+      case 'shuttle': return { say: ['리조트 무료 셔틀 시간표예요. 탑승은 로비 정문 앞입니다.',
+        ccard(I.pin, '리조트 무료 셔틀', [['가평역 ↔ 리조트', '매시 정각 · 09–21시'], ['남이섬 선착장', '10:00 · 13:00 · 16:00'], ['아침고요수목원', '10:30 · 14:30']])], opts: endOpts() };
+      case 'shop': {
+        const st = preState(r);
+        if (st === 'soon') return { say: [`이 예약의 이랜드 사전 주문은 <b>${fmtDT(preStart(r))}</b>에 열려요. 오픈되면 알림으로 알려드릴게요.`], opts: endOpts() };
+        if (st === 'closed') return { say: ['체크인 이후에는 사전 주문이 마감돼요. 객실에서 필요한 건 룸서비스로 주문하실 수 있어요.'], opts: [{ label: '다이닝 안내', to: 'dining' }, { label: '처음으로', to: 'menu' }] };
+        return { say: ['체크인 전에 주문하시면 객실에 미리 준비해 드려요. 예약에 맞춰 이런 상품을 추천해요.',
+          ccard(I.bag, `${esc(u.name)}님 예약 맞춤 추천`, picks(r).slice(0, 3).map(({ g }) => [`${ELAND[g.brand].ko} ${g.name}`, won(g.sale)]), { label: '사전 주문 바로가기', href: `#/shop/${r.id}` })],
+        opts: [{ label: '사전 주문 바로가기', go: `#/shop/${r.id}` }, { label: '처음으로', to: 'menu' }] };
+      }
+      case 'door': {
+        const say = ['불편을 드려 죄송해요. 아래 순서로 확인해 주세요.',
+          ccard(I.nfc, '문 열림 체크리스트', [['1', '휴대폰 NFC 설정 켜기'], ['2', '휴대폰 뒷면을 도어락에 1~2초 대기'], ['3', r.ble ? 'BLE 자동 열림은 블루투스 켜기' : '이 객실은 NFC 전용 잠금장치']])];
+        if (!canUseKey(r)) say.push('아직 모바일 키가 발급되지 않았어요. 체크인이 완료되면 사용할 수 있어요.');
+        return { say, opts: (canUseKey(r) ? [{ label: '모바일 키 열기', go: `#/key/${r.id}` }] : []).concat({ label: '직원 호출', to: 'staff' }, { label: '처음으로', to: 'menu' }) };
+      }
+      case 'staff': return { say: [`프런트에 요청을 전달했어요. 직원이 <b>5분 안에</b> ${roomTxt} 앞으로 찾아갈게요.`,
+        ccard(I.users, '직원 호출', [['요청번호', reqNo()], ['위치', roomTxt], ['예상 도착', '5분 이내']])], opts: endOpts() };
+      case 'human': return { say: ['상담원 연결을 요청했어요. 현재 대기 고객은 <b>0명</b>이에요.', '연결되는 동안 대부분의 요청은 AI 컨시어지가 바로 처리해 드릴 수 있어요.'], opts: menuOpts() };
+      case 'bye': return { say: ['이용해 주셔서 감사합니다. 오늘 상담은 어떠셨나요?'],
+        opts: [['만족해요', 'good'], ['보통이에요', 'soso'], ['아쉬워요', 'bad']].map(([label, v]) => ({ label, to: 'rate', arg: v })) };
+      case 'rate': return { say: ['소중한 의견 감사합니다. 필요하실 때 언제든 불러 주세요.'], opts: [{ label: '처음으로', to: 'menu' }] };
+      default: return { say: ['죄송해요, 아직 이해하지 못한 요청이에요. 아래 메뉴에서 골라 주시면 바로 도와드릴게요.'], opts: menuOpts() };
+    }
+  }
+
+  const cardHTML = (c) => `<div class="ccard"><div class="cc-hd">${c.icon}${c.title}</div><dl>${c.rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
+    ${c.cta ? `<button class="cc-cta" data-act="chatGo" data-href="${c.cta.href}">${c.cta.label}${I.right}</button>` : ''}</div>`;
+  function msgHTML(x, prev) {
+    const body = typeof x.m === 'string' ? `<div class="bubble">${x.m}</div>` : cardHTML(x.m);
+    if (x.from === 'me') return `<div class="msg me"><time>${x.at}</time>${body}</div>`;
+    const cont = prev && prev.from === 'bot';
+    return `<div class="msg bot ${cont ? 'cont' : ''}"><span class="bot-av sm">${EMBLEM}</span><div class="mb">${cont ? '' : '<small class="who">AI 컨시어지 K</small>'}${body}</div><time>${x.at}</time></div>`;
+  }
+  function renderChatBody() {
+    const b = $('#chatBody'); if (!b) return;
+    b.innerHTML = `<div class="chat-day">오늘</div><div class="chat-notice">${I.spark}AI 컨시어지가 24시간 답변해 드려요</div>`
+      + chat.msgs.map((x, i) => msgHTML(x, chat.msgs[i - 1])).join('')
+      + (chat.typing ? `<div class="msg bot ${chat.msgs.length && chat.msgs[chat.msgs.length - 1].from === 'bot' ? 'cont' : ''}"><span class="bot-av sm">${EMBLEM}</span><div class="bubble typing" aria-label="입력 중"><i></i><i></i><i></i></div></div>` : '');
+    b.scrollTop = b.scrollHeight;
+  }
+  function renderChatOpts() {
+    const o = $('#chatOpts'); if (!o) return;
+    o.innerHTML = chat.opts.map((x, i) => `<button class="qr ${x.go ? 'go' : ''}" data-act="chatPick" data-i="${i}">${x.label}${x.go ? I.right : ''}</button>`).join('');
+    const b = $('#chatBody'); if (b) b.scrollTop = b.scrollHeight;
+  }
+  function chatRun(id, arg) {
+    const n = flow(id, arg);
+    chat.opts = []; chat.busy = true; chat.typing = true;
+    renderChatOpts(); renderChatBody();
+    let t = 0;
+    n.say.forEach((m, i) => {
+      t += i === 0 ? 700 : 950;
+      chatLater(() => {
+        chat.msgs.push({ from: 'bot', m, at: nowT() });
+        chat.typing = i < n.say.length - 1;
+        renderChatBody();
+      }, t);
+    });
+    chatLater(() => {
+      chat.busy = false; chat.opts = n.opts; renderChatOpts();
+      if (n.follow) chatLater(() => { chat.msgs.push({ from: 'bot', m: n.follow, at: nowT() }); renderChatBody(); }, 2600);
+    }, t + 150);
+  }
+  function chatClear() { chat.timers.forEach(clearTimeout); chat.timers = []; chat.msgs = []; chat.opts = []; chat.busy = false; chat.typing = false; }
+  function openChat() {
+    closeOverlay();
+    let root = $('#chat-root');
+    if (!root) { root = document.createElement('div'); root.id = 'chat-root'; document.body.appendChild(root); }
+    root.innerHTML = `<div class="chat" role="dialog" aria-modal="true" aria-label="AI 컨시어지 채팅">
+      <header class="chat-hd"><button class="icon-btn" data-act="chatClose" aria-label="채팅 닫기">${I.back}</button>
+        <span class="bot-av">${EMBLEM}</span>
+        <div class="t"><b>AI 컨시어지 K <span class="ai-badge">AI</span></b><span><i></i>켄싱턴리조트 가평 · 24시간 응답</span></div>
+        <button class="icon-btn" data-act="chatReset" aria-label="대화 새로 시작">${I.refresh}</button></header>
+      <div class="chat-body" id="chatBody" aria-live="polite"></div>
+      <div class="chat-opts" id="chatOpts"></div>
+      <form class="chat-input" id="chatForm" autocomplete="off"><input id="chatText" placeholder="메시지를 입력하세요" maxlength="100" aria-label="메시지 입력"/><button type="submit" aria-label="보내기">${I.send}</button></form>
+    </div>`;
+    chat.open = true; document.body.classList.add('chat-on'); document.body.style.overflow = 'hidden';
+    renderChatBody(); renderChatOpts();
+    if (!chat.msgs.length && !chat.busy) chatRun('start');
+  }
+  function closeChat() {
+    const root = $('#chat-root'); if (root) root.innerHTML = '';
+    chat.open = false; document.body.classList.remove('chat-on'); document.body.style.overflow = '';
+  }
+  function chatPick(o) {
+    chat.msgs.push({ from: 'me', m: esc(o.label), at: nowT() });
+    chat.opts = []; renderChatOpts(); renderChatBody();
+    if (o.go) { chat.busy = true; chatLater(() => { chat.busy = false; closeChat(); go(o.go); }, 450); return; }
+    chatRun(o.to, o.arg);
+  }
+  function chatSend() {
+    const input = $('#chatText'); const text = input.value.trim();
+    if (!text || chat.busy) return;
+    input.value = '';
+    chat.msgs.push({ from: 'me', m: esc(text), at: nowT() });
+    renderChatBody();
+    const hit = KEYWORDS.find(([re]) => re.test(text));
+    chatRun(hit ? hit[1] : 'fallback');
+  }
+
   /* ---------------- router ---------------- */
   const routes = [
     [/^\/$/, viewHome],
@@ -932,7 +1142,7 @@
     },
     tab: (el) => { ui.tab = el.dataset.v; refresh(); },
     persona: (el) => {
-      S.persona = el.dataset.v; save(); closeOverlay(); ui.tab = 'upcoming';
+      S.persona = el.dataset.v; save(); closeOverlay(); ui.tab = 'upcoming'; chatClear();
       toast(`${me().name} 님(${isPrimary() ? '주 예약자' : '동숙자'}) 시점으로 전환했습니다.`);
       const h = location.hash || '#/';
       if (h === '#/' || h === '#/reservations') refresh(); else go('#/reservations');
@@ -950,7 +1160,7 @@
       else toast(`예약 상태를 ‘${STATUS[v].label}’(으)로 변경했습니다.`);
     },
     reset: () => {
-      localStorage.removeItem(STORE); S = initialState(); ui.ci = null; ui.key = null; ui.tab = 'upcoming';
+      localStorage.removeItem(STORE); S = initialState(); ui.ci = null; ui.key = null; ui.tab = 'upcoming'; chatClear();
       closeOverlay(); go('#/'); toast('데모 데이터를 초기화했습니다.');
     },
     addGuest: (el) => addGuestSheet(el.dataset.id),
@@ -1015,6 +1225,11 @@
       toast(r.bleOn ? '근접 시 자동 문 열림을 켰습니다.' : '근접 시 자동 문 열림을 껐습니다.');
     },
     approach: () => approach(),
+    chatOpen: () => openChat(),
+    chatClose: () => closeChat(),
+    chatReset: () => { chatClear(); chatRun('start'); },
+    chatPick: (el) => { const o = chat.opts[Number(el.dataset.i)]; if (o && !chat.busy) chatPick(o); },
+    chatGo: (el) => { closeChat(); go(el.dataset.href); },
     qty: (el) => {
       const c = ui.cart; const k = el.dataset.sku;
       const q = Math.max(0, Math.min(9, (c.items[k] || 0) + Number(el.dataset.d)));
@@ -1059,9 +1274,13 @@
   });
   document.addEventListener('submit', (e) => {
     if (e.target.id === 'guestForm') { e.preventDefault(); submitGuest(e.target); }
+    if (e.target.id === 'chatForm') { e.preventDefault(); chatSend(); }
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.innerHTML) closeOverlay(); });
-  window.addEventListener('hashchange', () => { navs++; closeOverlay(); render(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (overlay.innerHTML) closeOverlay(); else if (chat.open) closeChat();
+  });
+  window.addEventListener('hashchange', () => { navs++; closeOverlay(); closeChat(); render(); });
 
   /* ---------------- boot ---------------- */
   function splash() {
