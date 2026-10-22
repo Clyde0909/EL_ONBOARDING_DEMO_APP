@@ -139,7 +139,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
 
   /* ---------------- state ---------------- */
-  const STORE = 'kh-demo-state-v3';
+  const STORE = 'kh-demo-state-v4';
   function initialState() {
     const t = new Date(); t.setHours(0, 0, 0, 0);
     return {
@@ -151,7 +151,7 @@
       reservations: [
         {
           id: 'KH2610-118820', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '디럭스 패밀리 트윈', view: '북한강 리버뷰', theme: 'sea',
-          checkIn: iso(t), checkOut: iso(addDays(t, 2)), inTime: '15:00', outTime: '11:00', adults: 3, children: 0,
+          checkIn: iso(t), checkOut: iso(addDays(t, 2)), inTime: '15:00', outTime: '11:00', adults: 2, children: 0,
           status: 'waiting', ble: true, lock: 'K-Lock Pro · NFC / BLE', roomNo: '1207', floor: '12F', bleOn: false,
           guests: [{ id: 'g1', name: '김민지', phone: '010-9876-5432', state: 'accepted' }],
           pay: { brand: 'SHINHAN CARD', label: '신한카드', last4: '4821', amount: 428000 }
@@ -162,13 +162,6 @@
           status: 'waiting', ble: false, lock: 'K-Lock Classic · NFC 전용', roomNo: 'B-305', floor: 'B동 3F', bleOn: false,
           guests: [],
           pay: { brand: 'HYUNDAI CARD', label: '현대카드', last4: '1093', amount: 612000 }
-        },
-        {
-          id: 'KH2610-305517', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '스탠다드 더블', view: '북한강 리버뷰', theme: 'gold',
-          checkIn: iso(addDays(t, 9)), checkOut: iso(addDays(t, 10)), inTime: '15:00', outTime: '11:00', adults: 2, children: 0,
-          status: 'waiting', ble: true, lock: 'K-Lock Pro · NFC / BLE', roomNo: '903', floor: '9F', bleOn: false,
-          guests: [],
-          pay: { brand: 'KB KOOKMIN CARD', label: 'KB국민카드', last4: '7710', amount: 214000 }
         },
         {
           id: 'KH2607-073102', hotel: '켄싱턴리조트 가평', area: '경기 가평군', room: '리버 디럭스', view: '북한강 리버뷰', theme: 'autumn',
@@ -248,7 +241,7 @@
     return `<section class="sec reco" aria-label="AI 추천 주변 관광지">
       <div class="reco-card">
         <div class="reco-hd"><span class="chip chip-ai">${I.spark}AI 추천</span><small>${label} · ${fmtS(r.checkIn)} 예약 기준</small></div>
-        <p class="reco-msg"><b>${esc(me().name)}님</b>과 비슷한 예약을 하신 분들은<br/>이런 곳들도 예약하셨어요.</p>
+        <p class="reco-msg"><b>${esc(me().name)}님</b>과 비슷한 예약을 하신 분들은<br/>이런 곳들도 방문하셨어요.</p>
         <ol class="reco-list">${items.map((s, i) => `<li><span class="rk">${i + 1}</span>
           <div class="ri"><b>${s.name}</b><span>${s.desc} · ${s.km}km</span><div class="bar"><i style="width:${s.score}%"></i></div></div>
           <strong class="pct">${s.score}%</strong></li>`).join('')}</ol>
@@ -1131,7 +1124,7 @@
         ccard(I.coffee, '애슐리퀸즈 예약 확정', [['예약번호', reqNo()], ['일시', `${fmtS(r.checkIn)} ${arg}`], ['인원', `${r.adults + r.children}명`], ['혜택', '투숙객 10% 할인']])], opts: endOpts() };
       case 'tour': {
         const { label, items } = recommend(r);
-        return { say: [`<b>${esc(u.name)}님</b>과 비슷한 예약(${label})을 하신 분들은 이런 곳들도 예약하셨어요.`,
+        return { say: [`<b>${esc(u.name)}님</b>과 비슷한 예약(${label})을 하신 분들은 이런 곳들도 방문하셨어요.`,
           ccard(I.spark, 'AI 추천 · 적합도', items.slice(0, 3).map((s) => [`${s.name} · ${s.km}km`, `${s.score}%`]))],
         opts: [{ label: `${items[0].name} 가는 길`, to: 'route' }, { label: '리조트 셔틀 시간표', to: 'shuttle' }, { label: '처음으로', to: 'menu' }] };
       }
