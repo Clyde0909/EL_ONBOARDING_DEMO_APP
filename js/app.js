@@ -544,12 +544,46 @@
   const CROWD = [['한가함', 'ok'], ['보통', 'mid'], ['혼잡함', 'busy']];
   function crowdSection() {
     const h = new Date().getHours();
-    const cells = [
-      ['조식 뷔페', h === 8 || h === 9 ? 2 : h === 7 || h === 10 ? 1 : 0],
-      ['수영장', h >= 14 && h <= 17 ? 2 : (h >= 11 && h <= 13) || (h >= 18 && h <= 20) ? 1 : 0]
-    ];
+    const lvTag = (lv) => `<b class="crowd-lv ${CROWD[lv][1]}">${CROWD[lv][0]}</b>`;
     return `<section class="sec crowd-sec"><div class="sec-hd"><h2>시설 혼잡도</h2><span class="more">실시간 ${pad(h)}:${pad(new Date().getMinutes())} 기준</span></div>
-      <div class="crowd">${cells.map(([name, lv]) => `<div class="crowd-cell"><span class="crowd-name">${name}</span><b class="crowd-lv ${CROWD[lv][1]}">${CROWD[lv][0]}</b></div>`).join('')}</div></section>`;
+      <div class="crowd">
+        <div class="crowd-cell"><span class="crowd-name">조식 뷔페</span>${lvTag(h === 8 || h === 9 ? 2 : h === 7 || h === 10 ? 1 : 0)}</div>
+        <button class="crowd-cell tap" data-act="poolHeat" aria-label="수영장 혼잡도 히트맵 보기"><span class="crowd-name">수영장</span>${lvTag(poolLv(h))}<span class="crowd-hint">히트맵 보기 ›</span></button>
+      </div></section>`;
+  }
+  const poolLv = (h) => (h >= 14 && h <= 17 ? 2 : (h >= 11 && h <= 13) || (h >= 18 && h <= 20) ? 1 : 0);
+
+  // 하트 풀 히트맵 (데모: 열 때마다 하트 내부 무작위 핫스팟, 개수·강도는 혼잡 단계에 비례)
+  function poolHeat() {
+    const now = new Date();
+    const lv = poolLv(now.getHours());
+    const heart = 'M150 246 C 64 186, 12 132, 12 80 C 12 40, 44 12, 84 12 C 114 12, 138 30, 150 54 C 162 30, 186 12, 216 12 C 256 12, 288 40, 288 80 C 288 132, 236 186, 150 246 Z';
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    // 하트 내부 판정: (x²+y²−1)³ − x²y³ ≤ 0 (풀 좌표를 정규화)
+    const inHeart = (x, y) => { const nx = (x - 150) / 118, ny = (112 - y) / 118; return (nx * nx + ny * ny - 1) ** 3 - nx * nx * ny ** 3 <= 0; };
+    const pick = () => { for (;;) { const x = rnd(20, 280), y = rnd(16, 240); if (inHeart(x, y)) return [x, y]; } };
+    const [base, span] = [[0.15, 0.4], [0.35, 0.5], [0.55, 0.55]][lv];
+    const n = [5, 9, 13][lv] + Math.floor(rnd(0, 5));
+    // 군집: 1~3개 중심을 잡고 주변에 흩뿌려 실제 인파처럼 몰리게 함
+    const centers = Array.from({ length: 1 + Math.floor(rnd(0, 3)) }, pick);
+    const spots = Array.from({ length: n }, (_, i) => {
+      let p = pick();
+      if (i % 2 === 0) { const [cx, cy] = centers[i % centers.length]; const q = [cx + rnd(-40, 40), cy + rnd(-34, 34)]; if (inHeart(...q)) p = q; }
+      return [Math.round(p[0]), Math.round(p[1]), Math.round(rnd(16, 46)), Math.min(1, base + Math.random() * span)];
+    }).sort((a, b) => a[3] - b[3]);
+    const col = (v) => (v > 0.7 ? '#D64545' : v > 0.4 ? '#F2B705' : '#2E9E5B');
+    sheet('수영장 혼잡도', `<div class="heat">
+        <svg viewBox="0 0 300 260" role="img" aria-label="하트 모양 수영장 혼잡도 히트맵">
+          <defs><clipPath id="poolClip"><path d="${heart}"/></clipPath>
+            <filter id="poolBlur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="16"/></filter></defs>
+          <path d="${heart}" fill="#CFE8F2"/>
+          <g clip-path="url(#poolClip)"><g filter="url(#poolBlur)" opacity=".85">${spots.map(([x, y, r, v]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col(v)}"/>`).join('')}</g></g>
+          <path d="${heart}" fill="none" stroke="#fff" stroke-width="8"/><path d="${heart}" fill="none" stroke="#9CC3D3" stroke-width="2"/>
+        </svg>
+        <div class="heat-stat"><span>현재 혼잡도</span><b class="crowd-lv ${CROWD[lv][1]}">${CROWD[lv][0]}</b><span>인식 인원 약 <b>${[6, 18, 34][lv] + Math.floor(rnd(-3, 4))}명</b></span></div>
+        <div class="heat-legend"><span>한가함</span><i></i><span>혼잡함</span></div>
+        <p class="heat-note">AI 비전 인식 기반의 히트맵으로, 실제 혼잡도와 다를 수 있습니다.</p>
+      </div>`, `켄싱턴리조트 가평 하트 풀 · ${pad(now.getHours())}:${pad(now.getMinutes())} 기준`);
   }
 
   function viewHome() {
@@ -1254,6 +1288,7 @@
       if (navs > 0) history.back(); else location.replace(parentOf(path));
     },
     tab: (el) => { ui.tab = el.dataset.v; refresh(); },
+    poolHeat: () => poolHeat(),
     persona: (el) => {
       S.persona = el.dataset.v; save(); closeOverlay(); ui.tab = 'upcoming'; chatClear();
       toast(`${me().name} 님(${isPrimary() ? '주 예약자' : '동숙자'}) 시점으로 전환했습니다.`);

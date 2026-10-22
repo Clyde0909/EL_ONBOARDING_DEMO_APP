@@ -1,5 +1,5 @@
 /* 켄싱턴 데모 PWA service worker: app-shell 프리캐시 + offline 지원 */
-const CACHE = 'kh-demo-v6';
+const CACHE = 'kh-demo-v8';
 const ASSETS = [
   './',
   './index.html',
