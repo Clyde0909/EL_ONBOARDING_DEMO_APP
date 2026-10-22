@@ -540,6 +540,18 @@
   }
 
   /* ---------------- views ---------------- */
+  // 시설 혼잡도 (데모: 현재 시각대 기준 고정 규칙) — 0 한가함 / 1 보통 / 2 혼잡함
+  const CROWD = [['한가함', 'ok'], ['보통', 'mid'], ['혼잡함', 'busy']];
+  function crowdSection() {
+    const h = new Date().getHours();
+    const cells = [
+      ['조식 뷔페', h === 8 || h === 9 ? 2 : h === 7 || h === 10 ? 1 : 0],
+      ['수영장', h >= 14 && h <= 17 ? 2 : (h >= 11 && h <= 13) || (h >= 18 && h <= 20) ? 1 : 0]
+    ];
+    return `<section class="sec crowd-sec"><div class="sec-hd"><h2>시설 혼잡도</h2><span class="more">실시간 ${pad(h)}:${pad(new Date().getMinutes())} 기준</span></div>
+      <div class="crowd">${cells.map(([name, lv]) => `<div class="crowd-cell"><span class="crowd-name">${name}</span><b class="crowd-lv ${CROWD[lv][1]}">${CROWD[lv][0]}</b></div>`).join('')}</div></section>`;
+  }
+
   function viewHome() {
     ui.fab = '';
     const t = new Date();
@@ -577,6 +589,7 @@
           : `<button data-act="openShop"><span class="qi">${I.bag}</span>사전 주문</button>`}
         <button data-act="quickGuest"><span class="qi">${I.userPlus}</span>동숙자 추가</button>
       </nav>
+      ${visibleRes().some((r) => r.status === 'checkedIn') ? crowdSection() : ''}
       ${next ? recoSection(next) : ''}
       <div class="section-gap"></div>
       <section class="sec"><div class="sec-hd"><h2>테마기획전</h2><button class="more" data-act="soon" aria-label="테마기획전 더보기" style="color:var(--ink)">${I.plus}</button></div>
